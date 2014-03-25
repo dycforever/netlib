@@ -59,13 +59,39 @@ typedef struct sockaddr SA;
   (void)ret;
 }
 
+inline int createICMPSocket()
+{
+  // socket
+  int sockfd = ::socket(AF_INET, SOCK_RAM, IPPROTO_ICMP);
+  if (sockfd < 0)
+  {
+    FATAL("createDGramSocket failed, errno:%d with %s", errno, strerror(errno));
+    return -1;
+  }
+
+  return sockfd;
+}
+
+inline int createDGramSocket()
+{
+  // socket
+  int sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
+  if (sockfd < 0)
+  {
+    FATAL("createDGramSocket failed, errno:%d with %s", errno, strerror(errno));
+    return -1;
+  }
+
+  return sockfd;
+}
+
 inline int createBlockingSocket()
 {
   // socket
   int sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
   if (sockfd < 0)
   {
-    FATAL("createNonblockingOrDie errno:%d with %s", errno, strerror(errno));
+    FATAL("createNonblock failed, errno:%d with %s", errno, strerror(errno));
     return -1;
   }
 

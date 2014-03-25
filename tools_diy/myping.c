@@ -197,6 +197,7 @@ main(int argc, char **argv)
             // dyc: may be a hostname
 			char *idn;
 
+            // dyc: idn is a hostname string
 			idn = target;
             // TODO
 			hp = gethostbyname(idn);
@@ -221,11 +222,13 @@ main(int argc, char **argv)
 		socklen_t alen;
 		struct sockaddr_in dst = whereto;
 		int probe_fd = socket(AF_INET, SOCK_DGRAM, 0);
+        printf("heihei dyc 1, device: %s\n", device);
 
 		if (probe_fd < 0) {
 			perror("socket");
 			exit(2);
 		}
+        // dyc: device be set by -I option
 		if (device) {
 			struct ifreq ifr;
 			int rc;
