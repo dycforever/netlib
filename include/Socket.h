@@ -51,6 +51,9 @@ public:
 
     bool isConnected() {return _connected;}
     bool setConnected(bool stat) {return _connected=stat;}
+
+    int getopt(int level, int optname, void* optval, void* len);
+    int setopt(int level, int optname, void* optval, socklen_t len);
 private:
     /// On success, returns a non-negative integer that is
     /// a descriptor for the accepted socket, which has been

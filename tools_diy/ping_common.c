@@ -358,6 +358,7 @@ void print_timestamp(void)
 int pinger(void)
 {
 	static int oom_count;
+    // dyc: tokens 代表上次发送ICMP，与严格的每interval发送一次相比，延迟了多少时间
 	static int tokens;
 	int i;
 
@@ -368,20 +369,24 @@ int pinger(void)
 	/* Check that packets < rate*time + preload */
 	if (cur_time.tv_sec == 0) {
 		gettimeofday(&cur_time, NULL);
+        // dyc: preload=1 if not set by -l option
 		tokens = interval*(preload-1);
 	} else {
+        // dyc: ntokens 表示上次实际发送ICMP的时间距离现在多久
 		long ntokens;
 		struct timeval tv;
 
 		gettimeofday(&tv, NULL);
 		ntokens = (tv.tv_sec - cur_time.tv_sec)*1000 +
-			(tv.tv_usec-cur_time.tv_usec)/1000;
+			(tv.tv_usec - cur_time.tv_usec)/1000;
 		if (!interval) {
 			/* Case of unlimited flood is special;
 			 * if we see no reply, they are limited to 100pps */
 			if (ntokens < MININTERVAL && in_flight() >= preload)
 				return MININTERVAL-ntokens;
 		}
+        // dyc: 相加后得到，此次发送ICMP的时间，距离理论上上次发送的时间，有多久
+        //      所以即使上次有延迟，这次尽量不延迟
 		ntokens += tokens;
 		if (ntokens > interval*preload)
 			ntokens = interval*preload;
@@ -389,6 +394,7 @@ int pinger(void)
 			return interval - ntokens;
 
 		cur_time = tv;
+        // dyc: here mean ntokens>=interval, so means should send tokens minutes ago
 		tokens = ntokens - interval;
 	}
 
@@ -413,6 +419,7 @@ resend:
 			    in_flight() < screen_width)
 				write_stdout(".", 1);
 		}
+        // dyc: this ICMP should send tokens ago, so next send time is (interval - tokens) later
 		return interval - tokens;
 	}
 
@@ -501,6 +508,7 @@ void setup(int icmp_sock)
 	struct timeval tv;
 	sigset_t sset;
 
+    // dyc: set by -f and -i
 	if ((options & F_FLOOD) && !(options & F_INTERVAL))
 		interval = 0;
 
@@ -515,18 +523,23 @@ void setup(int icmp_sock)
 	}
 
 	hold = 1;
+    // dyc: set by -d
 	if (options & F_SO_DEBUG)
 		setsockopt(icmp_sock, SOL_SOCKET, SO_DEBUG, (char *)&hold, sizeof(hold));
+    // dyc: set by -r
 	if (options & F_SO_DONTROUTE)
 		setsockopt(icmp_sock, SOL_SOCKET, SO_DONTROUTE, (char *)&hold, sizeof(hold));
 
 #ifdef SO_TIMESTAMP
+    // dyc: set by -U
 	if (!(options&F_LATENCY)) {
+        printf("options&F_LATENCY \n");
 		int on = 1;
 		if (setsockopt(icmp_sock, SOL_SOCKET, SO_TIMESTAMP, &on, sizeof(on)))
 			fprintf(stderr, "Warning: no SO_TIMESTAMP support, falling back to SIOCGSTAMP\n");
 	}
 #endif
+    // dyc: set by -m
 	if (options & F_MARK) {
 		int ret;
 
@@ -620,6 +633,7 @@ void main_loop(int icmp_sock, __u8 *packet, int packlen)
 		/* Check exit conditions. */
 		if (exiting)
 			break;
+        // dyc: exit after receive @npackets packets
 		if (npackets && nreceived + nerrors >= npackets)
 			break;
 		if (deadline && nerrors)
@@ -735,6 +749,7 @@ void main_loop(int icmp_sock, __u8 *packet, int packlen)
 				install_filter();
 
 			/* If nothing is in flight, "break" returns us to pinger. */
+            // dyc: return 0 means ntransmitted == ack
 			if (in_flight() == 0)
 				break;
 

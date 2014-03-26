@@ -62,7 +62,7 @@ typedef struct sockaddr SA;
 inline int createICMPSocket()
 {
   // socket
-  int sockfd = ::socket(AF_INET, SOCK_RAM, IPPROTO_ICMP);
+  int sockfd = ::socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
   if (sockfd < 0)
   {
     FATAL("createDGramSocket failed, errno:%d with %s", errno, strerror(errno));

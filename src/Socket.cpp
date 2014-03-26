@@ -17,6 +17,25 @@ Socket::~Socket()
     }
 }
 
+int Socket::getopt(int level, int optname, void* optval, void* len) {
+    int ret = ::getsockopt(_sockfd, level, optname, optval, (socklen_t*)len);
+    if (ret < 0) {
+        FATAL("getsockopt() failed, ret:%d socket[%d] level[%d] optname[%u] errno[%d] with %s", 
+                ret, _sockfd, level, optname, errno, strerror(errno));
+        return ret;
+    }
+    return ret;
+}
+
+int Socket::setopt(int level, int optname, void* optval, socklen_t len) {
+    int ret = ::setsockopt(_sockfd, level, optname, optval, len);
+    if (ret < 0) {
+        FATAL("getsockopt() failed, ret:%d socket[%d] level[%d] optname[%u] errno[%d] with %s", 
+                ret, _sockfd, level, optname, errno, strerror(errno));
+    }
+    return ret;
+}
+
 int Socket::connect(const InetAddress& peerAddr) {
    const struct sockaddr_in& sockAddr = peerAddr.getSockAddrInet();
    int ret = ::connect(_sockfd, sockaddr_cast(&sockAddr), static_cast<socklen_t>(sizeof sockAddr));

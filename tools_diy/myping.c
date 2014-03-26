@@ -183,6 +183,8 @@ main(int argc, char **argv)
 			options |= F_SOURCEROUTE;
 		}
 	}
+
+    // dyc: can follow multiple ip/hostname
 	while (argc > 0) {
 		target = *argv;
 
@@ -199,7 +201,6 @@ main(int argc, char **argv)
 
             // dyc: idn is a hostname string
 			idn = target;
-            // TODO
 			hp = gethostbyname(idn);
 			if (!hp) {
 				fprintf(stderr, "ping: unknown host %s\n", target);
@@ -218,8 +219,10 @@ main(int argc, char **argv)
 	}
 
     // dyc: source is a static variable
+    //      if this doesn't set by -I option, use probe_fd to find it
 	if (source.sin_addr.s_addr == 0) {
 		socklen_t alen;
+        // dyc: dst is the last ip/hostname specified in cmd line
 		struct sockaddr_in dst = whereto;
 		int probe_fd = socket(AF_INET, SOCK_DGRAM, 0);
         printf("heihei dyc 1, device: %s\n", device);
@@ -229,6 +232,7 @@ main(int argc, char **argv)
 			exit(2);
 		}
         // dyc: device be set by -I option
+        //      usually it means a specific interface
 		if (device) {
 			struct ifreq ifr;
 			int rc;
@@ -260,6 +264,7 @@ main(int argc, char **argv)
 			}
 		}
 
+        // dyc: set tos if call ping with Q option
 		if (settos &&
 		    setsockopt(probe_fd, IPPROTO_IP, IP_TOS, (char *)&settos, sizeof(int)) < 0)
 			perror("Warning: error setting QOS sockopts");
@@ -330,6 +335,8 @@ main(int argc, char **argv)
 		exit(2);
 	}
 
+    // TODO
+    // dyc: device will be set if use -I option to specify a interface
 	if (device) {
 		struct ifreq ifr;
 
@@ -343,6 +350,7 @@ main(int argc, char **argv)
 		cmsg_len = sizeof(cmsg);
 	}
 
+    // dyc: broadcast_pings is set by -b option
 	if (broadcast_pings || IN_MULTICAST(ntohl(whereto.sin_addr.s_addr))) {
 		if (uid) {
 			if (interval < 1000) {
@@ -365,6 +373,7 @@ main(int argc, char **argv)
 		}
 	}
 
+    // dyc: F_STRICTSOURCE will be set if use -I option to specify a ip address
 	if ((options&F_STRICTSOURCE) &&
 	    bind(icmp_sock, (struct sockaddr*)&source, sizeof(source)) == -1) {
 		perror("bind");
@@ -388,6 +397,7 @@ main(int argc, char **argv)
 		fprintf(stderr, "WARNING: your kernel is veeery old. No problems.\n");
 
 	/* record route option */
+    // dyc: set by -R option
 	if (options & F_RROUTE) {
 		memset(rspace, 0, sizeof(rspace));
 		rspace[0] = IPOPT_NOP;
@@ -400,6 +410,7 @@ main(int argc, char **argv)
 			exit(2);
 		}
 	}
+    // dyc: set by -T option
 	if (options & F_TIMESTAMP) {
 		memset(rspace, 0, sizeof(rspace));
 		rspace[0] = IPOPT_TIMESTAMP;
@@ -421,6 +432,7 @@ main(int argc, char **argv)
 		}
 		optlen = 40;
 	}
+
 	if (options & F_SOURCEROUTE) {
 		int i;
 		memset(rspace, 0, sizeof(rspace));
@@ -441,10 +453,12 @@ main(int argc, char **argv)
 
 	/* Estimate memory eaten by single packet. It is rough estimate.
 	 * Actually, for small datalen's it depends on kernel side a lot. */
+    // dyc: datalen is the packet size; set by -s option
 	hold = datalen + 8;
 	hold += ((hold+511)/512)*(optlen + 20 + 16 + 64 + 160);
 	sock_setbufs(icmp_sock, hold);
 
+    // dyc: broadcast_pings is set by -b option
 	if (broadcast_pings) {
 		if (setsockopt(icmp_sock, SOL_SOCKET, SO_BROADCAST,
 			       &broadcast_pings, sizeof(broadcast_pings)) < 0) {

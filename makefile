@@ -1,6 +1,6 @@
 
-# configuration
-COM_LIB_PATH=../misc/common
+COM_LIB_PATH=
+include makefile.cfg
 
 export CPLUS_INCLUDE_PATH=$(COM_LIB_PATH)
 export CC=g++
@@ -8,11 +8,14 @@ export CFLAGS= -g -pipe -Wall -fPIC -I./include/ -I$(COM_LIB_PATH) -L$(COM_LIB_P
 VPATH=src
 
 .PHONY:all
-all: server client
+all: libnet.a server client
 
 libObj=Connection.o Client.o Server.o EventLoop.o Epoller.o InetAddress.o Socket.o Task.o
 
 expObj=server.o client.o
+
+libnet.a: $(libObj)
+	ar -rs $@ $^
 
 bin=server client
 $(bin):%:%.o $(libObj)
