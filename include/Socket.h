@@ -1,4 +1,6 @@
 #include <sys/epoll.h>
+#include <netinet/ip_icmp.h>
+
 #include <boost/function.hpp>
 #ifndef __SOCKET_H__
 #define __SOCKET_H__
@@ -54,6 +56,9 @@ public:
 
     int getopt(int level, int optname, void* optval, void* len);
     int setopt(int level, int optname, void* optval, socklen_t len);
+
+    ssize_t sendmsg(const struct ::msghdr *msg, int flags);
+    ssize_t recvmsg(struct ::msghdr *msg, int flags);
 private:
     /// On success, returns a non-negative integer that is
     /// a descriptor for the accepted socket, which has been

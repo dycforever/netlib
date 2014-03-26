@@ -8,6 +8,14 @@
 
 namespace dyc {
 
+ssize_t Socket::sendmsg(const struct msghdr *msg, int flags) {
+    return ::sendmsg(_sockfd, msg, flags);
+}
+
+ssize_t Socket::recvmsg(struct msghdr *msg, int flags) {
+    return ::recvmsg(_sockfd, msg, flags);
+}
+
 Socket::~Socket()
 {
     if (close(_sockfd) == 0) {
