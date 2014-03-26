@@ -606,6 +606,22 @@ out:
  */
 int send_probe()
 {
+//  struct icmphdr {
+//    __u8		type;
+//    __u8		code;
+//    __sum16	checksum;
+//    union {
+//  	struct {
+//  		__be16	id;
+//  		__be16	sequence;
+//  	} echo;
+//  	__be32	gateway;
+//  	struct {
+//  		__be16	__unused;
+//  		__be16	mtu;
+//  	} frag;
+//    } un;
+//  };
 	struct icmphdr *icp;
 	int cc;
 	int i;
@@ -615,8 +631,11 @@ int send_probe()
 	icp->code = 0;
 	icp->checksum = 0;
 	icp->un.echo.sequence = htons(ntransmitted+1);
+
+	// dyc: set in setup(icmp_sock), ident = htons(getpid() & 0xFFFF); 
 	icp->un.echo.id = ident;			/* ID */
 
+    // dyc: clear (ntransmitted+1)th bit in revd_tbl.bitmap
 	rcvd_clear(ntransmitted+1);
 
 	if (timing) {
@@ -634,6 +653,7 @@ int send_probe()
 	/* compute ICMP checksum here */
 	icp->checksum = in_cksum((u_short *)icp, cc, 0);
 
+	// dyc: timing = 1 if (datalen >= sizeof(struct timeval))
 	if (timing && !(options&F_LATENCY)) {
 		struct timeval tmp_tv;
 		gettimeofday(&tmp_tv, NULL);
