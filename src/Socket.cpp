@@ -38,7 +38,7 @@ int Socket::getopt(int level, int optname, void* optval, void* len) {
 int Socket::setopt(int level, int optname, void* optval, socklen_t len) {
     int ret = ::setsockopt(_sockfd, level, optname, optval, len);
     if (ret < 0) {
-        FATAL("getsockopt() failed, ret:%d socket[%d] level[%d] optname[%u] errno[%d] with %s", 
+        FATAL("setsockopt() failed, ret:%d socket[%d] level[%d] optname[%u] errno[%d] with %s", 
                 ret, _sockfd, level, optname, errno, strerror(errno));
     }
     return ret;

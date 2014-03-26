@@ -683,6 +683,7 @@ int send_probe()
 		iov.iov_len = cc;
 
 		i = sendmsg(icmp_sock, &m, confirm);
+        printf("send %d bytes\n", i);
 		confirm = 0;
 	} while (0);
 
@@ -705,135 +706,135 @@ void pr_echo_reply(__u8 *_icp, int len)
 int
 parse_reply(struct msghdr *msg, int cc, void *addr, struct timeval *tv)
 {
-	struct sockaddr_in *from = addr;
-	__u8 *buf = msg->msg_iov->iov_base;
-	struct icmphdr *icp;
-	struct iphdr *ip;
-	int hlen;
-	int csfailed;
+    struct sockaddr_in *from = addr;
+    __u8 *buf = msg->msg_iov->iov_base;
+    struct icmphdr *icp;
+    struct iphdr *ip;
+    int hlen;
+    int csfailed;
 
-	/* Check the IP header */
-	ip = (struct iphdr *)buf;
-	hlen = ip->ihl*4;
-	if (cc < hlen + 8 || ip->ihl < 5) {
-		if (options & F_VERBOSE)
-			fprintf(stderr, "ping: packet too short (%d bytes) from %s\n", cc,
-				pr_addr(from->sin_addr.s_addr));
-		return 1;
-	}
+    /* Check the IP header */
+    ip = (struct iphdr *)buf;
+    hlen = ip->ihl*4;
+    if (cc < hlen + 8 || ip->ihl < 5) {
+        if (options & F_VERBOSE)
+            fprintf(stderr, "ping: packet too short (%d bytes) from %s\n", cc,
+                    pr_addr(from->sin_addr.s_addr));
+        return 1;
+    }
 
-	/* Now the ICMP part */
-	cc -= hlen;
-	icp = (struct icmphdr *)(buf + hlen);
-	csfailed = in_cksum((u_short *)icp, cc, 0);
+    /* Now the ICMP part */
+    cc -= hlen;
+    icp = (struct icmphdr *)(buf + hlen);
+    csfailed = in_cksum((u_short *)icp, cc, 0);
 
-	if (icp->type == ICMP_ECHOREPLY) {
-		if (icp->un.echo.id != ident)
-			return 1;			/* 'Twas not our ECHO */
-		if (gather_statistics((__u8*)icp, sizeof(*icp), cc,
-				      ntohs(icp->un.echo.sequence),
-				      ip->ttl, 0, tv, pr_addr(from->sin_addr.s_addr),
-				      pr_echo_reply))
-			return 0;
-	} else {
-		/* We fall here when a redirect or source quench arrived.
-		 * Also this branch processes icmp errors, when IP_RECVERR
-		 * is broken. */
+    if (icp->type == ICMP_ECHOREPLY) {
+        if (icp->un.echo.id != ident)
+            return 1;			/* 'Twas not our ECHO */
+        if (gather_statistics((__u8*)icp, sizeof(*icp), cc,
+                    ntohs(icp->un.echo.sequence),
+                    ip->ttl, 0, tv, pr_addr(from->sin_addr.s_addr),
+                    pr_echo_reply))
+            return 0;
+    } else {
+        /* We fall here when a redirect or source quench arrived.
+         * Also this branch processes icmp errors, when IP_RECVERR
+         * is broken. */
 
-		switch (icp->type) {
-		case ICMP_ECHO:
-			/* MUST NOT */
-			return 1;
-		case ICMP_SOURCE_QUENCH:
-		case ICMP_REDIRECT:
-		case ICMP_DEST_UNREACH:
-		case ICMP_TIME_EXCEEDED:
-		case ICMP_PARAMETERPROB:
-			{
-				struct iphdr * iph = (struct  iphdr *)(&icp[1]);
-				struct icmphdr *icp1 = (struct icmphdr*)((unsigned char *)iph + iph->ihl*4);
-				int error_pkt;
-				if (cc < 8+sizeof(struct iphdr)+8 ||
-				    cc < 8+iph->ihl*4+8)
-					return 1;
-				if (icp1->type != ICMP_ECHO ||
-				    iph->daddr != whereto.sin_addr.s_addr ||
-				    icp1->un.echo.id != ident)
-					return 1;
-				error_pkt = (icp->type != ICMP_REDIRECT &&
-					     icp->type != ICMP_SOURCE_QUENCH);
-				if (error_pkt) {
-					acknowledge(ntohs(icp1->un.echo.sequence));
-					if (working_recverr) {
-						return 0;
-					} else {
-						static int once;
-						/* Sigh, IP_RECVERR for raw socket
-						 * was broken until 2.4.9. So, we ignore
-						 * the first error and warn on the second.
-						 */
-						if (once++ == 1)
-							fprintf(stderr, "\rWARNING: kernel is not very fresh, upgrade is recommended.\n");
-						if (once == 1)
-							return 0;
-					}
-				}
-				nerrors+=error_pkt;
-				if (options&F_QUIET)
-					return !error_pkt;
-				if (options & F_FLOOD) {
-					if (error_pkt)
-						write_stdout("\bE", 2);
-					return !error_pkt;
-				}
-				print_timestamp();
-				printf("From %s: icmp_seq=%u ",
-				       pr_addr(from->sin_addr.s_addr),
-				       ntohs(icp1->un.echo.sequence));
-				if (csfailed)
-					printf("(BAD CHECKSUM)");
-				pr_icmph(icp->type, icp->code, ntohl(icp->un.gateway), icp);
-				return !error_pkt;
-			}
-		default:
-			/* MUST NOT */
-			break;
-		}
-		if ((options & F_FLOOD) && !(options & (F_VERBOSE|F_QUIET))) {
-			if (!csfailed)
-				write_stdout("!E", 2);
-			else
-				write_stdout("!EC", 3);
-			return 0;
-		}
-		if (!(options & F_VERBOSE) || uid)
-			return 0;
-		if (options & F_PTIMEOFDAY) {
-			struct timeval recv_time;
-			gettimeofday(&recv_time, NULL);
-			printf("%lu.%06lu ", (unsigned long)recv_time.tv_sec, (unsigned long)recv_time.tv_usec);
-		}
-		printf("From %s: ", pr_addr(from->sin_addr.s_addr));
-		if (csfailed) {
-			printf("(BAD CHECKSUM)\n");
-			return 0;
-		}
-		pr_icmph(icp->type, icp->code, ntohl(icp->un.gateway), icp);
-		return 0;
-	}
+        switch (icp->type) {
+            case ICMP_ECHO:
+                /* MUST NOT */
+                return 1;
+            case ICMP_SOURCE_QUENCH:
+            case ICMP_REDIRECT:
+            case ICMP_DEST_UNREACH:
+            case ICMP_TIME_EXCEEDED:
+            case ICMP_PARAMETERPROB:
+                {
+                    struct iphdr * iph = (struct  iphdr *)(&icp[1]);
+                    struct icmphdr *icp1 = (struct icmphdr*)((unsigned char *)iph + iph->ihl*4);
+                    int error_pkt;
+                    if (cc < 8+sizeof(struct iphdr)+8 ||
+                            cc < 8+iph->ihl*4+8)
+                        return 1;
+                    if (icp1->type != ICMP_ECHO ||
+                            iph->daddr != whereto.sin_addr.s_addr ||
+                            icp1->un.echo.id != ident)
+                        return 1;
+                    error_pkt = (icp->type != ICMP_REDIRECT &&
+                            icp->type != ICMP_SOURCE_QUENCH);
+                    if (error_pkt) {
+                        acknowledge(ntohs(icp1->un.echo.sequence));
+                        if (working_recverr) {
+                            return 0;
+                        } else {
+                            static int once;
+                            /* Sigh, IP_RECVERR for raw socket
+                             * was broken until 2.4.9. So, we ignore
+                             * the first error and warn on the second.
+                             */
+                            if (once++ == 1)
+                                fprintf(stderr, "\rWARNING: kernel is not very fresh, upgrade is recommended.\n");
+                            if (once == 1)
+                                return 0;
+                        }
+                    }
+                    nerrors+=error_pkt;
+                    if (options&F_QUIET)
+                        return !error_pkt;
+                    if (options & F_FLOOD) {
+                        if (error_pkt)
+                            write_stdout("\bE", 2);
+                        return !error_pkt;
+                    }
+                    print_timestamp();
+                    printf("From %s: icmp_seq=%u ",
+                            pr_addr(from->sin_addr.s_addr),
+                            ntohs(icp1->un.echo.sequence));
+                    if (csfailed)
+                        printf("(BAD CHECKSUM)");
+                    pr_icmph(icp->type, icp->code, ntohl(icp->un.gateway), icp);
+                    return !error_pkt;
+                }
+            default:
+                /* MUST NOT */
+                break;
+        }
+        if ((options & F_FLOOD) && !(options & (F_VERBOSE|F_QUIET))) {
+            if (!csfailed)
+                write_stdout("!E", 2);
+            else
+                write_stdout("!EC", 3);
+            return 0;
+        }
+        if (!(options & F_VERBOSE) || uid)
+            return 0;
+        if (options & F_PTIMEOFDAY) {
+            struct timeval recv_time;
+            gettimeofday(&recv_time, NULL);
+            printf("%lu.%06lu ", (unsigned long)recv_time.tv_sec, (unsigned long)recv_time.tv_usec);
+        }
+        printf("From %s: ", pr_addr(from->sin_addr.s_addr));
+        if (csfailed) {
+            printf("(BAD CHECKSUM)\n");
+            return 0;
+        }
+        pr_icmph(icp->type, icp->code, ntohl(icp->un.gateway), icp);
+        return 0;
+    }
 
-	if (!(options & F_FLOOD)) {
-		pr_options(buf + sizeof(struct iphdr), hlen);
+    if (!(options & F_FLOOD)) {
+        pr_options(buf + sizeof(struct iphdr), hlen);
 
-		if (options & F_AUDIBLE)
-			putchar('\a');
-		putchar('\n');
-		fflush(stdout);
-	} else {
-		putchar('\a');
-		fflush(stdout);
-	}
-	return 0;
+        if (options & F_AUDIBLE)
+            putchar('\a');
+        putchar('\n');
+        fflush(stdout);
+    } else {
+        putchar('\a');
+        fflush(stdout);
+    }
+    return 0;
 }
 
 

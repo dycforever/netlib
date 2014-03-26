@@ -1,6 +1,6 @@
-
 COM_LIB_PATH=/home/dyc/program/common/
-NET_LIB_PATH=/home/dyc/netlib/
+include ../makefile.cfg
+NET_LIB_PATH=/home/dyc/program/netlib/
 
 export CPLUS_INCLUDE_PATH=$(COM_LIB_PATH)
 export CC=g++

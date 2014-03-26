@@ -708,6 +708,7 @@ void main_loop(int icmp_sock, __u8 *packet, int packlen)
 			msg.msg_control = ans_data;
 			msg.msg_controllen = sizeof(ans_data);
 
+            printf("recv %d bytes\n", packlen);
 			cc = recvmsg(icmp_sock, &msg, polling);
 			polling = MSG_DONTWAIT;
 
