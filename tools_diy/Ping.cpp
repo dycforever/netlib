@@ -37,9 +37,49 @@ static struct {
 
 u_char outpack[0x10000];
 long ntransmitted;
-
+int ident;
 char *pr_addr(__u32 addr);
 int options;
+
+#if BYTE_ORDER == LITTLE_ENDIAN
+# define ODDBYTE(v)	(v)
+#elif BYTE_ORDER == BIG_ENDIAN
+# define ODDBYTE(v)	((u_short)(v) << 8)
+#else
+# define ODDBYTE(v)	htons((u_short)(v) << 8)
+#endif
+
+
+u_short in_cksum(const u_short *addr, register int len, u_short csum)
+{
+	register int nleft = len;
+	const u_short *w = addr;
+	register u_short answer;
+	register int sum = csum;
+
+	/*
+	 *  Our algorithm is simple, using a 32 bit accumulator (sum),
+	 *  we add sequential 16 bit words to it, and at the end, fold
+	 *  back all the carry bits from the top 16 bits into the lower
+	 *  16 bits.
+	 */
+	while (nleft > 1)  {
+		sum += *w++;
+		nleft -= 2;
+	}
+
+	/* mop up an odd byte, if necessary */
+	if (nleft == 1)
+		sum += ODDBYTE(*(u_char *)w); /* le16toh() may be unavailable on old systems */
+
+	/*
+	 * add back carry outs from top 16 bits to low 16 bits
+	 */
+	sum = (sum >> 16) + (sum & 0xffff);	/* add hi 16 to low 16 */
+	sum += (sum >> 16);			/* add carry */
+	answer = ~sum;				/* truncate to 16 bits */
+	return (answer);
+}
 
 void print_timestamp(void)
 {
@@ -367,8 +407,8 @@ void pr_icmph(__u8 type, __u8 code, __u32 info, struct icmphdr *icp)
 }
 
 jmp_buf pr_addr_jmp;
-char *
-pr_addr(__u32 addr)
+
+char* pr_addr(__u32 addr)
 {
 	struct hostent *hp;
 	static char buf[4096];
@@ -415,9 +455,9 @@ int parse_reply(struct msghdr *msg, int cc, void *addr, struct timeval *tv) {
 	csfailed = 0x90ab;
 
 	if (icp->type == ICMP_ECHOREPLY) {
-        printf("received a reply");
-		if (icp->un.echo.id != getpid()) {
-            printf("reply id error");
+        NOTICE("received a reply");
+		if (icp->un.echo.id != ident) {
+            FATAL_ERROR("reply id error");
 			return 1;			/* 'Twas not our ECHO */
         }
 //		if (gather_statistics((__u8*)icp, sizeof(*icp), cc,
@@ -448,7 +488,7 @@ int parse_reply(struct msghdr *msg, int cc, void *addr, struct timeval *tv) {
 					return 1;
 				if (icp1->type != ICMP_ECHO ||
 				    iph->daddr != whereto.sin_addr.s_addr ||
-				    icp1->un.echo.id != getpid())
+				    icp1->un.echo.id != ident)
 					return 1;
 				error_pkt = (icp->type != ICMP_REDIRECT &&
 					     icp->type != ICMP_SOURCE_QUENCH);
@@ -559,20 +599,42 @@ int recv_reply(Socket& isocket) {
 
     NOTICE("recv %d bytes", packlen);
     int cc = isocket.recvmsg(&msg, 0);
+    while (cc<0 && errno == EAGAIN) {
+        NOTICE("will sleep");
+        sleep(1);
+    }
 //    polling = MSG_DONTWAIT;
 
     if (cc < 0) {
-        perror("ping: recvmsg");
+        FATAL("recvmsg failed, ret: %d errno", cc);
+        return cc;
     } else {
         not_ours = parse_reply(&msg, cc, addrbuf, recv_timep);
     }
 
     if (not_ours)
-        FATAL("parse reply failed");
+        FATAL("parse reply failed, not_ours: %d", not_ours);
     return 0;
 }
 
 int send_probe(Socket& isocket) {
+
+//  struct icmphdr {
+//    __u8		type;
+//    __u8		code;
+//    __sum16	checksum;
+//    union {
+//  	struct {
+//  		__be16	id;
+//  		__be16	sequence;
+//  	} echo;
+//  	__be32	gateway;
+//  	struct {
+//  		__be16	__unused;
+//  		__be16	mtu;
+//  	} frag;
+//    } un;
+//  };
     struct icmphdr *icp;
     int cc;
     int i;
@@ -582,12 +644,14 @@ int send_probe(Socket& isocket) {
     icp->code = 0;
     icp->checksum = 0;
     icp->un.echo.sequence = htons(ntransmitted+1);
-    icp->un.echo.id = getpid();			/* ID */
+    icp->un.echo.id = ident;			/* ID */
+    NOTICE("sizeof icmphdr: %lu", sizeof(struct icmphdr));
     int datalen = 56;
     cc = datalen + 8;			/* skips ICMP portion */
 
     /* compute ICMP checksum here */
-    icp->checksum = 0x1234;
+    icp->checksum = in_cksum((u_short *)icp, cc, 0);
+    NOTICE("checksum: %x", (unsigned int)icp->checksum);
 
     // dyc: timing = 1 if (datalen >= sizeof(struct timeval))
 //    if (timing && !(options&F_LATENCY)) {
@@ -614,7 +678,8 @@ int send_probe(Socket& isocket) {
 
 int main (int argc, char** argv) {
 	char hnamebuf[NI_MAXHOST];
-    char* hostname;
+    char* hostname = NULL;
+    ident = getpid();
 
 //    int prob_sock = createDGramSocket();
     int icmp_sock = createICMPSocket();
@@ -627,7 +692,6 @@ int main (int argc, char** argv) {
 
 	if (argc > 1) {
 		char* target = argv[1];
-
 		memset((char *)&whereto, 0, sizeof(whereto));
 
 		whereto.sin_family = AF_INET;
@@ -656,14 +720,17 @@ int main (int argc, char** argv) {
         FATAL("too few argments, %d", argc);
         return -1;
     }
+    NOTICE("hostname: %s", hostname);
 
-    InetAddress addr(hostname, 80);
-//    socket.connect(addr);
+    struct sockaddr_in source;
+    source.sin_port= 0;
+    CHECK_ERRORNO(-1, inet_pton(AF_INET, "192.168.238.170", &source.sin_addr) == 1, "inet_pton failed");
+	CHECK_ERROR(-1, bind(icmp_sock, (struct sockaddr*)&source, sizeof(source)) == 0, "bind failed");
 
     {
         NOTICE("set opt");
         struct icmp_filter filt;
-		filt.data = ~((1<<ICMP_SOURCE_QUENCH)|
+        filt.data = ~((1<<ICMP_SOURCE_QUENCH)|
 			      (1<<ICMP_DEST_UNREACH)|
 			      (1<<ICMP_TIME_EXCEEDED)|
 			      (1<<ICMP_PARAMETERPROB)|
@@ -683,7 +750,7 @@ int main (int argc, char** argv) {
     int optlen= 0;
 	int hold = datalen + 8;
 	hold += ((hold+511)/512)*(optlen + 20 + 16 + 64 + 160);
-	int sndbuf = alloc;
+	int sndbuf = hold;
 	CHECK_ERROR(-1, isocket.setopt(SOL_SOCKET, SO_SNDBUF, (char *)&sndbuf, sizeof(sndbuf)) == 0, "set opt failed");
 	CHECK_ERROR(-1, isocket.setopt(SOL_SOCKET, SO_RCVBUF, (char *)&hold, sizeof(hold)) == 0, "set opt failed");
 
@@ -712,5 +779,6 @@ int main (int argc, char** argv) {
         break;
     }
 
+    NOTICE("all done");
     return 0;
 }

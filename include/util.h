@@ -15,7 +15,6 @@
 #include <stdint.h>
 #include <endian.h>
 
-#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>  // snprintf
 #include <strings.h>  // bzero
@@ -29,6 +28,8 @@
 namespace dyc {
 
 typedef struct sockaddr SA;
+
+extern int error;
 
  inline const SA* sockaddr_cast(const struct ::sockaddr_in* addr)
 {
