@@ -30,10 +30,12 @@ struct icmp_filter {
 };
 
 static struct {
-    struct ::cmsghdr cm;
-    struct ::in_pktinfo ipi;
-} cmsg = { {sizeof(struct cmsghdr) + sizeof(struct in_pktinfo), SOL_IP, IP_PKTINFO},
-	   {0, }};
+    struct cmsghdr cm;
+    struct in_pktinfo ipi;
+} cmsg = { 
+    {sizeof(struct cmsghdr) + sizeof(struct in_pktinfo), SOL_IP, IP_PKTINFO},
+    {0, }
+};
 
 u_char outpack[0x10000];
 long ntransmitted;
@@ -648,10 +650,8 @@ int send_probe(Socket& isocket) {
     NOTICE("sizeof icmphdr: %lu", sizeof(struct icmphdr));
     int datalen = 56;
     cc = datalen + 8;			/* skips ICMP portion */
-
     /* compute ICMP checksum here */
     icp->checksum = in_cksum((u_short *)icp, cc, 0);
-    NOTICE("checksum: %x", (unsigned int)icp->checksum);
 
     // dyc: timing = 1 if (datalen >= sizeof(struct timeval))
 //    if (timing && !(options&F_LATENCY)) {
@@ -687,7 +687,6 @@ int main (int argc, char** argv) {
     Socket isocket(icmp_sock);
 
     NOTICE("run diy ping with version: %s, argc: %d", SNAPSHOT, argc);
-
     int options = 0;
 
 	if (argc > 1) {
@@ -724,8 +723,8 @@ int main (int argc, char** argv) {
 
     struct sockaddr_in source;
     source.sin_port= 0;
-    CHECK_ERRORNO(-1, inet_pton(AF_INET, "192.168.238.170", &source.sin_addr) == 1, "inet_pton failed");
-	CHECK_ERROR(-1, bind(icmp_sock, (struct sockaddr*)&source, sizeof(source)) == 0, "bind failed");
+//    CHECK_ERRORNO(-1, inet_pton(AF_INET, "192.168.238.170", &source.sin_addr) == 1, "inet_pton failed");
+//	CHECK_ERROR(-1, bind(icmp_sock, (struct sockaddr*)&source, sizeof(source)) == 0, "bind failed");
 
     {
         NOTICE("set opt");
