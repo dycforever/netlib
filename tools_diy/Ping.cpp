@@ -722,14 +722,15 @@ int main (int argc, char** argv) {
     }
     NOTICE("hostname: %s", hostname);
 
-    struct sockaddr_in source;
-    source.sin_port= 0;
-    CHECK_ERRORNO(-1, inet_pton(AF_INET, "192.168.238.170", &source.sin_addr) == 1, "inet_pton failed");
-	CHECK_ERROR(-1, bind(icmp_sock, (struct sockaddr*)&source, sizeof(source)) == 0, "bind failed");
+//    struct sockaddr_in source;
+//    source.sin_port= 0;
+//    CHECK_ERRORNO(-1, inet_pton(AF_INET, "192.168.238.170", &source.sin_addr) == 1, "inet_pton failed");
+//	CHECK_ERROR(-1, bind(icmp_sock, (struct sockaddr*)&source, sizeof(source)) == 0, "bind failed");
 
     {
         NOTICE("set opt");
         struct icmp_filter filt;
+        // dyc: only accept ICMP types list below
         filt.data = ~((1<<ICMP_SOURCE_QUENCH)|
 			      (1<<ICMP_DEST_UNREACH)|
 			      (1<<ICMP_TIME_EXCEEDED)|
@@ -742,30 +743,32 @@ int main (int argc, char** argv) {
         }
     }
 
-	int hold1 = 1;
-	CHECK_ERROR(-1, isocket.setopt(SOL_IP, IP_RECVERR, (char *)&hold1, sizeof(hold1)) == 0, "set opt failed");
+//	int hold1 = 1;
+//	CHECK_ERROR(-1, isocket.setopt(SOL_IP, IP_RECVERR, (char *)&hold1, sizeof(hold1)) == 0, "set opt failed");
 
 // call in setbufs()
-    int datalen = 56;
-    int optlen= 0;
-	int hold = datalen + 8;
-	hold += ((hold+511)/512)*(optlen + 20 + 16 + 64 + 160);
-	int sndbuf = hold;
-	CHECK_ERROR(-1, isocket.setopt(SOL_SOCKET, SO_SNDBUF, (char *)&sndbuf, sizeof(sndbuf)) == 0, "set opt failed");
-	CHECK_ERROR(-1, isocket.setopt(SOL_SOCKET, SO_RCVBUF, (char *)&hold, sizeof(hold)) == 0, "set opt failed");
+
+//    int datalen = 56;
+//    int optlen= 0;
+//	int hold = datalen + 8;
+//	hold += ((hold+511)/512)*(optlen + 20 + 16 + 64 + 160);
+//	int sndbuf = hold;
+//	CHECK_ERROR(-1, isocket.setopt(SOL_SOCKET, SO_SNDBUF, (char *)&sndbuf, sizeof(sndbuf)) == 0, "set opt failed");
+//	CHECK_ERROR(-1, isocket.setopt(SOL_SOCKET, SO_RCVBUF, (char *)&hold, sizeof(hold)) == 0, "set opt failed");
 
 // call in setup()
-	int on = 1;
-    CHECK_ERROR(-1, isocket.setopt(SOL_SOCKET, SO_TIMESTAMP, &on, sizeof(on)) == 0, "set opt failed");
 
-	struct timeval tv;
-	tv.tv_sec = 1;
-	tv.tv_usec = 0;
-	CHECK_ERROR(-1, isocket.setopt(SOL_SOCKET, SO_SNDTIMEO, (char*)&tv, sizeof(tv)) == 0, "set opt failed");
+//	int on = 1;
+//    CHECK_ERROR(-1, isocket.setopt(SOL_SOCKET, SO_TIMESTAMP, &on, sizeof(on)) == 0, "set opt failed");
+//
+//	struct timeval tv;
+//	tv.tv_sec = 1;
+//	tv.tv_usec = 0;
+//	CHECK_ERROR(-1, isocket.setopt(SOL_SOCKET, SO_SNDTIMEO, (char*)&tv, sizeof(tv)) == 0, "set opt failed");
 
-	tv.tv_sec = 1;
-	tv.tv_usec = 0;
-	CHECK_ERROR(-1, isocket.setopt(SOL_SOCKET, SO_RCVTIMEO, (char*)&tv, sizeof(tv)) == 0, "set opt failed");
+//	tv.tv_sec = 1;
+//	tv.tv_usec = 0;
+//	CHECK_ERROR(-1, isocket.setopt(SOL_SOCKET, SO_RCVTIMEO, (char*)&tv, sizeof(tv)) == 0, "set opt failed");
 
     for (;;) {
         NOTICE("send_probe");
