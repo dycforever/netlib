@@ -30,10 +30,12 @@ struct icmp_filter {
 };
 
 static struct {
-    struct ::cmsghdr cm;
-    struct ::in_pktinfo ipi;
-} cmsg = { {sizeof(struct cmsghdr) + sizeof(struct in_pktinfo), SOL_IP, IP_PKTINFO},
-	   {0, }};
+    struct cmsghdr cm;
+    struct in_pktinfo ipi;
+} cmsg = { 
+    {sizeof(struct cmsghdr) + sizeof(struct in_pktinfo), SOL_IP, IP_PKTINFO},
+    {0, }
+};
 
 u_char outpack[0x10000];
 long ntransmitted;
@@ -648,10 +650,8 @@ int send_probe(Socket& isocket) {
     NOTICE("sizeof icmphdr: %lu", sizeof(struct icmphdr));
     int datalen = 56;
     cc = datalen + 8;			/* skips ICMP portion */
-
     /* compute ICMP checksum here */
     icp->checksum = in_cksum((u_short *)icp, cc, 0);
-    NOTICE("checksum: %x", (unsigned int)icp->checksum);
 
     // dyc: timing = 1 if (datalen >= sizeof(struct timeval))
 //    if (timing && !(options&F_LATENCY)) {
@@ -687,7 +687,6 @@ int main (int argc, char** argv) {
     Socket isocket(icmp_sock);
 
     NOTICE("run diy ping with version: %s, argc: %d", SNAPSHOT, argc);
-
     int options = 0;
 
 	if (argc > 1) {
