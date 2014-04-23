@@ -1,4 +1,3 @@
-
 COM_LIB_PATH=
 include makefile.cfg
 

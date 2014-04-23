@@ -681,44 +681,43 @@ int main (int argc, char** argv) {
     char* hostname = NULL;
     ident = getpid();
 
-//    int prob_sock = createDGramSocket();
     int icmp_sock = createICMPSocket();
-//    Socket socket(prob_sock);
     Socket isocket(icmp_sock);
 
     NOTICE("run diy ping with version: %s, argc: %d", SNAPSHOT, argc);
     int options = 0;
 
-	if (argc > 1) {
-		char* target = argv[1];
-		memset((char *)&whereto, 0, sizeof(whereto));
-
-		whereto.sin_family = AF_INET;
-        // dyc: return 1 means a valid ip string
-		if (inet_aton(target, &whereto.sin_addr) == 1) {
-            NOTICE("target is a valid ip string: %s", target);
-			hostname = target;
-			if (argc == 1)
-				options |= F_NUMERIC;
-		} else {
-            // dyc: idn is a hostname string
-			char *idn = target;
-            NOTICE("target is a hostname string: %s", target);
-	        struct hostent *hp = gethostbyname(idn);
-			if (!hp) {
-				fprintf(stderr, "ping: unknown host %s\n", target);
-				exit(2);
-			}
-			memcpy(&whereto.sin_addr, hp->h_addr, 4);
-
-			strncpy(hnamebuf, hp->h_name, sizeof(hnamebuf) - 1);
-			hnamebuf[sizeof(hnamebuf) - 1] = 0;
-			hostname = hnamebuf;
-		}
-	} else {
+	if (argc <= 1) {
         FATAL("too few argments, %d", argc);
         return -1;
     }
+
+    char* target = argv[1];
+    memset((char *)&whereto, 0, sizeof(whereto));
+
+    whereto.sin_family = AF_INET;
+    // dyc: return 1 means a valid ip string
+    if (inet_aton(target, &whereto.sin_addr) == 1) {
+        NOTICE("target is a valid ip string: %s", target);
+        hostname = target;
+        if (argc == 1)
+            options |= F_NUMERIC;
+    } else {
+        // dyc: idn is a hostname string
+        char *idn = target;
+        NOTICE("target is a hostname string: %s", target);
+        struct hostent *hp = gethostbyname(idn);
+        if (!hp) {
+            fprintf(stderr, "ping: unknown host %s\n", target);
+            exit(2);
+        }
+        memcpy(&whereto.sin_addr, hp->h_addr, 4);
+
+        strncpy(hnamebuf, hp->h_name, sizeof(hnamebuf) - 1);
+        hnamebuf[sizeof(hnamebuf) - 1] = 0;
+        hostname = hnamebuf;
+    }
+
     NOTICE("hostname: %s", hostname);
 
 //    struct sockaddr_in source;
