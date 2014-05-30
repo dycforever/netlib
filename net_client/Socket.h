@@ -36,6 +36,9 @@ public:
     explicit Socket(bool blocking)
         : mBlocking(blocking){ 
             createSocket();
+            if (!mBlocking) {
+                setNonblocking();
+            }
         }
     ~Socket();
 

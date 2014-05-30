@@ -50,8 +50,6 @@ private:
     void writeComplete();
     void readComplete();
 
-    MutexLock _listMutex;
-
     InetAddress localAddr;
     InetAddress peerAddr;
     SocketPtr mSocket;

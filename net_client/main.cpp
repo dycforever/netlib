@@ -1,12 +1,15 @@
 #include "util.h"
 #include "Socket.h"
+#include "Tokenizer.h"
 #include "Mutex.h"
 #include "InetAddress.h"
 #include "EventLoop.h"
 #include "Condition.h"
 #include <boost/bind.hpp>
 
+using namespace dyc;
 using namespace std;
+
 typedef dyc::Socket* SocketPtr;
 class HttpResponseParse {
 
@@ -15,19 +18,34 @@ public:
 
     int readData(SocketPtr socket) {
         char buf[1024];
+        cout << "in read data" << endl;
+
         int count = socket->recv(buf, sizeof(buf));
+        cout << "recv " << count << " bytes with errno: " << errno << " " << strerror(errno) << endl;
 
-        cout << "recv " << count << " bytes" << endl;
+        if (count == 0) {
+            mCond.notify();
+            return 0;
+        }
 
-        mResponse.append(buf, count);
-        mCond.notify();
+        if (count > 0) {
+            mResponse.append(buf, count);
+            findStr(mResponse, ("\r\n\r\n"));
+        }
+
+        return count;
     }
 
     int conn(SocketPtr socket) {
-        std::string reqLine ="GET /gz2 HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        cout << "connect success" << endl;
+    }
+
+    int writeData(SocketPtr socket) {
+        std::string reqLine ="GET /gz2?gz2=false HTTP/1.1\r\nHost: localhost\r\n\r\n";
         int count = socket->send(reqLine.c_str(), reqLine.size()-mPos);
         mPos += count;
         cout << "send " << count << " bytes" << endl;
+        return count;
     }
 
     std::string out() {
@@ -36,7 +54,6 @@ public:
 
     void wait() {
         cout << "will wait" << endl;
-        mCond.wait();
         mCond.wait();
         cout << "awake" << endl;
     }
@@ -48,33 +65,25 @@ private:
     dyc::Condition mCond;
 };
 
-
+void* thr_fn(void* data) {
+    EventLoop* p = (EventLoop*)(data);
+    p->loop();
+}
 
 int main() {
-    using namespace dyc;
-    using namespace std;
-
-    MutexLock lock;
-    Condition cond(lock);
-    cond.wait();
-    cout << "hehe" << endl;
-
-    pthread_cond_t pc;
-    cout << pthread_cond_init(&pc, NULL) << endl;
-    lock.lock();
-    cout << pthread_cond_wait(&pc, lock.getPthreadMutex()) << endl;
-    lock.unlock();
-    cout << "hehe" << endl;
-
-
-    Socket sock(true);
+    Socket sock(false);
 
     InetAddress addr("127.0.0.1", 8714);
 
     boost::shared_ptr<Epoller> epoller = boost::shared_ptr<Epoller>(NEW Epoller());
-    boost::shared_ptr<EventLoop> loop = boost::shared_ptr<EventLoop>(NEW EventLoop(epoller));
+    epoller->createEpoll();
+    EventLoop* p = NEW EventLoop(epoller);
+    boost::shared_ptr<EventLoop> loop = boost::shared_ptr<EventLoop>(p);
 
     Connection conn(&sock, loop);
+    epoller->addRW(&conn);
+
+    sock.connect(addr);
     HttpResponseParse parser;
 
     boost::function< int (SocketPtr) > readfunc = boost::bind(&HttpResponseParse::readData, &parser, _1);
@@ -82,6 +91,12 @@ int main() {
 
     boost::function< int (SocketPtr) > connfunc = boost::bind(&HttpResponseParse::readData, &parser, _1);
     conn.setConnCallback(connfunc);
+
+    boost::function< int (SocketPtr) > writefunc = boost::bind(&HttpResponseParse::writeData, &parser, _1);
+    conn.setWriteCallback(writefunc);
+
+    pthread_t ntid;
+    pthread_create(&ntid, NULL, thr_fn, p);
 
     parser.wait();
 

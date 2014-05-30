@@ -65,7 +65,7 @@ int Epoller::_removeEvent(ConnectionPtr socket) {
     NOTICE("del port in epoll %d", epsfd);
     int ret = epoll_ctl(_epoll_socket, EPOLL_CTL_DEL, sockfd, NULL);
     if( ret < 0 ){
-        FATAL("add socket:%d into epoll fd:%d failed", sockfd, epsfd);
+        FATAL("remove socket:%d from epoll fd:%d failed", sockfd, epsfd);
         return -1;
     }
     return 0;
@@ -80,8 +80,8 @@ int Epoller::_addEvent(ConnectionPtr socket, uint32_t op_types) {
     event.events = op_types;
 
     int epsfd = _epoll_socket;
-    const char* ev = op_types==EPOLLIN ? "epoll_in" : "epoll_out";
-    NOTICE("add [%s] event in epoll socket[%d]", ev, epsfd);
+    const char* ev = (op_types==EPOLLIN) ? "epoll_in" : "epoll_out";
+    NOTICE("add [%d][%s] event in epoll socket[%d]", sockfd, ev, epsfd);
     int ret = epoll_ctl(_epoll_socket, EPOLL_CTL_ADD, sockfd, &event);
     if( ret < 0 ){
         FATAL("add socket:%d into epoll fd:%d failed errno:%d %s", sockfd, epsfd, errno, strerror(errno));
@@ -101,7 +101,7 @@ int Epoller::poll(Event* list) {
         case EAGAIN:
             return 0;
         default:
-            WARNING("epoll_wait return %d with errno[%d]", ret, errno);
+            WARNING("epoll_wait return %d with errno[%d]: %s", ret, errno, strerror(errno));
             ret = -1;
     };
     return ret;

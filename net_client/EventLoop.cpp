@@ -65,8 +65,8 @@ void EventLoop::loop()
 //          }
 //          NOTICE("handle event in connection[%d]", fd);
           int ret = connection->handle(_active_events[i]);
-          if (ret != 0) {
-              WARNING("handle failed");
+          if (ret <= 0) {
+//              WARNING("handle failed");
               _poller->removeEvent(connection);
           }
       }

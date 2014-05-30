@@ -1,20 +1,27 @@
-
-netlib_sources = [str(fn) for fn in Glob('*.cpp') if str(fn) not in ['main.cpp']]
-
+#
 env = Environment(CPPPATH = ['.'], CCFLAGS = '-g')
 
-env.Library(target = 'netlib',
-             source = netlib_sources,
-             dirInPackage = 'lib64')
-
+#
+#netlib_sources = [str(fn) for fn in Glob('*.cpp') if str(fn) not in ['main.cpp']]
+#
+#env.Library(target = 'netlib',
+#             source = netlib_sources,
+#             dirInPackage = 'lib64')
+#
 
 
 libsname=[
-     'netlib',
+#     'netlib',
+     'alog',
      'pthread'
 ]
 
 
-Repository('/home/dingyc/tools/zlib')
-env.Program("main", ["main.cpp"], LIBPATH=["."], LIBS=["netlib"])
+#Repository('/home/dingyc/tools/zlib')
+#env.Program("main", ["main.cpp"], LIBPATH=["."], LIBS=libsname)
+
+
+env.Program("log", ["log.cpp"], LIBPATH=["."], LIBS=libsname)
+
+env.Program("BufferTest", ["BufferTest.cpp"], LIBPATH=["."], LIBS=libsname)
 

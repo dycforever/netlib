@@ -47,7 +47,7 @@ int Socket::setopt(int level, int optname, void* optval, socklen_t len) {
 int Socket::connect(const InetAddress& peerAddr) {
    const struct sockaddr_in& sockAddr = peerAddr.getSockAddrInet();
    int ret = ::connect(mSockfd, sockaddr_cast(&sockAddr), static_cast<socklen_t>(sizeof sockAddr));
-   if (ret < 0) {
+   if ( mBlocking && ret < 0) {
         FATAL("ret:%d bind socket[%d] raw_ip[%s] port[%u] Die errno[%d] with %s", 
                 ret, mSockfd, inet_ntoa(sockAddr.sin_addr), ntohs(sockAddr.sin_port), errno, strerror(errno));
    }

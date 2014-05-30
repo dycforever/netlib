@@ -22,14 +22,17 @@ void Connection::writeComplete() {
 int Connection::handle(const epoll_event& event) {
     int ret = 0;
     if (event.events & EPOLLIN) {
-        if (!mConnected)
-            mReadCallback(mSocket);
-        else
-            mConnCallback(mSocket);
+        ret = mReadCallback(mSocket);
     } else if (event.events & EPOLLOUT) {
-        mWriteCallback(mSocket);
+        if (!mConnected) {
+            // check connected
+            mConnected = true;
+            ret = mConnCallback(mSocket);
+        }
+        else {
+            ret = mWriteCallback(mSocket);
+        }
     } else {
-        ret = -1;
         NOTICE("unknow event");
     }
     if (ret < 0) {
