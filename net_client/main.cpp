@@ -3,8 +3,7 @@
 #include "InetAddress.h"
 
 int main() {
-    int sockfd = dyc::createBlockingSocket();
-    dyc::Socket sock(sockfd);
+    dyc::Socket sock(true);
     const std::string addStr("127.0.0.1");
     dyc::InetAddress add(addStr, 8714);
     sock.connect(add);

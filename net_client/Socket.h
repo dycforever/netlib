@@ -13,19 +13,38 @@ class InetAddress;
 // It's thread safe, all operations are delagated to OS.
 class Socket {
 public:
+    void createSocket() {
+        mSockfd = ::socket(AF_INET, SOCK_STREAM, 0);
+        if (mSockfd < 0) {
+            FATAL("createNonblock failed, errno:%d with %s", errno, strerror(errno));
+        }
+    }
 
-    explicit Socket(int sockfd)
-        : _sockfd(sockfd), _connected(false){ }
+    void setNonblocking() {
+        int opts = fcntl(mSockfd, F_GETFL);
+        if (opts < 0) {
+            FATAL("Executing fcntl function(getting flags) failed.  errno:%d with %s", errno, strerror(errno));
+        }
+
+        opts = opts | O_NONBLOCK;
+        if (fcntl(mSockfd, F_SETFL, opts) < 0 ) {
+            FATAL("Executing fcntl function(setting flags) failed.  errno:%d with %s", errno, strerror(errno));
+        }
+    }
+
+
+    explicit Socket(bool blocking)
+        : mBlocking(blocking), mConnected(false){ 
+            createSocket();
+        }
     ~Socket();
 
     int bind(const InetAddress& localaddr);
     int listen();
     int accept(InetAddress& peeraddr);
     int connect(const InetAddress& localaddr);
-    int getEvents() { return _events;}
-    void setEvents(int events) { _events = events;}
 
-    int fd() {return _sockfd;}
+    int fd() {return mSockfd;}
     int shutdownWrite();
 
     /// Enable/disable TCP_NODELAY (disable/enable Nagle's algorithm).
@@ -35,18 +54,11 @@ public:
     /// Enable/disable SO_KEEPALIVE
     void setKeepAlive(bool on);
 
-    void enableRead();
-    void disableRead();
-    void enableWrite();
-    void disableWrite();
-
-    int handle(const epoll_event& event);
-
     int send(const char* buf, size_t len);
     int recv(char* buf, size_t len);
 
-    bool isConnected() {return _connected;}
-    bool setConnected(bool stat) {return _connected=stat;}
+    bool isConnected() {return mConnected;}
+    bool setConnected(bool stat) {return mConnected=stat;}
 
     int getopt(int level, int optname, void* optval, void* len);
     int setopt(int level, int optname, void* optval, socklen_t len);
@@ -60,16 +72,11 @@ private:
     /// On error, -1 is returned, and *peeraddr is untouched.
     int accept(int sockfd, struct sockaddr_in* addr);
 
-    int _sockfd;
+    int mSockfd;
 
-    int handleRead();
-    int handleWrite();
-    int handleError();
 
-    int _events;
-    int _revents;
-
-    bool _connected;
+    bool mConnected;
+    bool mBlocking;
 };
 
 }

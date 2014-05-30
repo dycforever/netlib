@@ -17,3 +17,4 @@ libsname=[
 
 Repository('/home/dingyc/tools/zlib')
 env.Program("main", ["main.cpp"], LIBPATH=["."], LIBS=["netlib"])
+

@@ -47,6 +47,8 @@ namespace dyc {
 
 typedef struct sockaddr SA;
 
+#define NEW new(std::nothrow)
+
 extern int error;
 
  inline const SA* sockaddr_cast(const struct ::sockaddr_in* addr)
@@ -104,36 +106,6 @@ inline int createDGramSocket()
   return sockfd;
 }
 
-inline int createBlockingSocket()
-{
-  // socket
-  int sockfd = ::socket(AF_INET, SOCK_STREAM, 0);
-  if (sockfd < 0)
-  {
-    FATAL("createNonblock failed, errno:%d with %s", errno, strerror(errno));
-    return -1;
-  }
-
-  return sockfd;
-}
-
- inline int createNonblockingSocket()
-{
-  // socket
-  int sockfd = createBlockingSocket();
-  int opts = fcntl(sockfd, F_GETFL);
-  if (opts < 0) {
-      FATAL("Executing fcntl function(getting flags) failed.  errno:%d with %s", errno, strerror(errno));
-      return -1;
-  }
-
-  opts = opts | O_NONBLOCK;
-  if (fcntl(sockfd, F_SETFL, opts) < 0 ) {
-      FATAL("Executing fcntl function(setting flags) failed.  errno:%d with %s", errno, strerror(errno));
-      return -1;
-  }
-  return sockfd;
-}
 
 inline void fromIpPort(const char* ip, uint16_t port,
                            struct ::sockaddr_in* addr)

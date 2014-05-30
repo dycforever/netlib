@@ -24,6 +24,26 @@ inline void UNPRINT_COLOR(){
         fflush(LOGOUT);\
     }while(0)
 
+#define DEBUG(format, arguments...) \
+    do{ \
+        PRINT_COLOR(BLUE); \
+        fprintf(LOGOUT," [DEBUG] "); \
+        UNPRINT_COLOR(); \
+        fprintf(LOGOUT,format"\n", ##arguments);\
+        fflush(LOGOUT);\
+    }while(0)
+
+#define WARNING(format, arguments...) \
+    do{ \
+        PRINT_COLOR(YELLOW); \
+        fprintf(LOGOUT," [WARNING] "); \
+        UNPRINT_COLOR(); \
+        fprintf(LOGOUT,format"\n", ##arguments);\
+        fflush(LOGOUT);\
+    }while(0)
+
+
+
 #define FATAL(format, arguments...) \
     do{ \
         PRINT_COLOR(RED); \
