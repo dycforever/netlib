@@ -12,29 +12,29 @@ void Epoller::setTimeout(int t) {
     _timeout = t;
 }
 
-int Epoller::addRead(ConnectionPtr socket) {
+int Epoller::addRead(ConnectionPtr connection) {
     lock();
-    int ret = _addEvent(socket, EPOLLIN);
+    int ret = _addEvent(connection, EPOLLIN);
     unlock();
     return ret;
 }
 
-int Epoller::addWrite(ConnectionPtr socket) {
+int Epoller::addWrite(ConnectionPtr connection) {
     lock();
-    int ret = _addEvent(socket, EPOLLOUT);
+    int ret = _addEvent(connection, EPOLLOUT);
     unlock();
     return ret;
 }
 
-int Epoller::addRW(ConnectionPtr socket) {
+int Epoller::addRW(ConnectionPtr connection) {
     int ret = 0;
-    ret = _addEvent(socket, EPOLLIN|EPOLLOUT);
+    ret = _addEvent(connection, EPOLLIN|EPOLLOUT);
     return ret;
 }
 
-int Epoller::removeEvent(ConnectionPtr socket) {
+int Epoller::removeEvent(ConnectionPtr connection) {
     lock();
-    int ret = _removeEvent(socket);
+    int ret = _removeEvent(connection);
     unlock();
     return ret;
 }

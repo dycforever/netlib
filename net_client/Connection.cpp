@@ -7,7 +7,8 @@
 
 namespace dyc {
 
-Connection::Connection(SocketPtr socket, boost::shared_ptr<EventLoop> loop): mSocket(socket), _loop(loop) { }
+Connection::Connection(SocketPtr socket, boost::shared_ptr<EventLoop> loop): 
+    mConnected(false), mSocket(socket), _loop(loop) { }
 
 
 int Connection::send(const char* data, int64_t size) {
@@ -21,7 +22,10 @@ void Connection::writeComplete() {
 int Connection::handle(const epoll_event& event) {
     int ret = 0;
     if (event.events & EPOLLIN) {
-        mReadCallback(mSocket);
+        if (!mConnected)
+            mReadCallback(mSocket);
+        else
+            mConnCallback(mSocket);
     } else if (event.events & EPOLLOUT) {
         mWriteCallback(mSocket);
     } else {

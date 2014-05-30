@@ -51,7 +51,6 @@ int Socket::connect(const InetAddress& peerAddr) {
         FATAL("ret:%d bind socket[%d] raw_ip[%s] port[%u] Die errno[%d] with %s", 
                 ret, mSockfd, inet_ntoa(sockAddr.sin_addr), ntohs(sockAddr.sin_port), errno, strerror(errno));
    }
-   mConnected = true;
    return ret;
 }
 
@@ -172,7 +171,6 @@ write_again:
             break;
         default:
             NOTICE("write return %d with errno[%d], this socket is disconnected", count, errno);
-            mConnected = false;
     };
     return count;
 }
@@ -193,7 +191,6 @@ read_again:
             break;
         default:
             NOTICE("read return %d with errno[%d], this socket is disconnected", count, errno);
-            mConnected = false;
     };
     return count;
 }

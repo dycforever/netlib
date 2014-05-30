@@ -33,8 +33,12 @@ public:
     int fd() { return mSocket->fd();}
 
     void setReadCallback(ReadCallbackFunc cb) { mReadCallback = cb;}
+    void setConnCallback(ConnCallbackFunc cb) { mConnCallback = cb;}
     void setWriteCallback(WriteCallbackFunc cb) { mWriteCallback = cb;}
     int handle(const epoll_event& event);
+
+    bool isConnected() {return mConnected;}
+    bool setConnected(bool stat) {return mConnected=stat;}
 
     void enableRead();
     void disableRead();
@@ -56,8 +60,11 @@ private:
 
     WriteCallbackFunc mWriteCallback;
     ReadCallbackFunc mReadCallback;
+    ConnCallbackFunc mConnCallback;
+
     ReadCallbackFunc _errorCallback;
 
+    bool mConnected;
     int mEvents;
 };
 

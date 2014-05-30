@@ -34,7 +34,7 @@ public:
 
 
     explicit Socket(bool blocking)
-        : mBlocking(blocking), mConnected(false){ 
+        : mBlocking(blocking){ 
             createSocket();
         }
     ~Socket();
@@ -57,8 +57,6 @@ public:
     int send(const char* buf, size_t len);
     int recv(char* buf, size_t len);
 
-    bool isConnected() {return mConnected;}
-    bool setConnected(bool stat) {return mConnected=stat;}
 
     int getopt(int level, int optname, void* optval, void* len);
     int setopt(int level, int optname, void* optval, socklen_t len);
@@ -75,7 +73,6 @@ private:
     int mSockfd;
 
 
-    bool mConnected;
     bool mBlocking;
 };
 
