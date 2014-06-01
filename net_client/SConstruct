@@ -1,9 +1,12 @@
 #!/usr/bin/python
-sub = SConscript(['test/SConscript'])
+sub = SConscript(['test/SConscript'], variant_dir='build')
 
-env = Environment(CPPPATH = ['.'], CCFLAGS = '-g')
+env = Environment(CPPPATH = ['.'], CCFLAGS = '-g', tools=['default', 'packaging'])
 
 netlib_sources = [str(fn) for fn in Glob('*.cpp') if str(fn) not in ['main.cpp']]
+
+netlib_files = netlib_sources.append([str(fn) for fn in Glob('*.h')])
+
 env.Library(target = 'netlib',
              source = netlib_sources,
              dirInPackage = 'lib64')
@@ -20,17 +23,18 @@ env.Alias("install", "/home/dyc/intall_test/")
 
 runTests = """
 echo "start run test !!!"
-./test/BufferTest
-./test/HttpRequestTest
+#./test/BufferTest
+#./test/HttpRequestTest
 """
 
 test = env.Command( target = "test", source = "", action = runTests)
-#Depends( test, main )
+Depends( test, main )
 env.AlwaysBuild(test)
 
 #ut = Builder(action = 'echo "running unit test" ')
 
-env = Environment(tools=['default', 'packaging'])
+print "#############################################################"
+print "installed: ", FindInstalledFiles()
 env.Package( NAME           = 'httpc',
         VERSION        = '0.0.1',
         PACKAGEVERSION = 0,
@@ -38,7 +42,7 @@ env.Package( NAME           = 'httpc',
         LICENSE        = 'gpl',
         SUMMARY        = 'balalalalal',
         DESCRIPTION    = 'this should be really really long',
-        X_RPM_GROUP    = 'Application/fu',
-        SOURCE_URL     = 'http://foo.org/foo-1.2.3.tar.gz'
+        X_RPM_GROUP    = 'Application/fu', 
+        source = FindInstalledFiles()
         )
 
