@@ -8,35 +8,120 @@
 namespace dyc {
 
 Connection::Connection(SocketPtr socket, boost::shared_ptr<EventLoop> loop): 
-    mConnected(false), mSocket(socket), _loop(loop) { }
+    mConnected(false), mSocket(socket), _loop(loop), 
+    mReadBuffer(NULL, 0) { 
+        mReadBuffer.makeSpace(1024*1024);
+        mWriteCallback = boost::bind(&defaultWriteCallback);
+        mReadCallback = boost::bind(&defaultReadCallback, _1);
+        mConnCallback = boost::bind(&defaultConnCallback);
+    }
 
+void Connection::addBuffer(const char* data, int64_t size) {
+    MutexLockGuard g(mLock);
+    DEBUG("add buffer in send queue");
+    mSendBuffers.push_back(NEW Buffer(data, size, true));
+}
+
+void Connection::removeBuffer() {
+    MutexLockGuard g(mLock);
+    DEBUG("remove buffer in send queue");
+    DELETE(mSendBuffers.front());
+    mSendBuffers.pop_front();
+}
 
 int Connection::send(const char* data, int64_t size) {
+    addBuffer(data, size);
+    enableWrite();
     return 0;
 }
 
-void Connection::writeComplete() {
+int Connection::send(const std::string& str) {
+    return send(str.c_str(), str.size());
 }
 
-// return 0 means the socket can be removed
+
+Connection::BufferPtr Connection::getSendBuffer() {
+    MutexLockGuard g(mLock);
+    if (mSendBuffers.size() == 0) {
+        return NULL;
+    }
+    return mSendBuffers.front();
+}
+
+
+int Connection::readSocket() {
+    int ret = mSocket->recv(mReadBuffer.beginWrite(), mReadBuffer.writableSize());
+    DEBUG("read %d bytes", ret);
+    return ret;
+}
+
+
+int Connection::_writeSocket(BufferPtr buffer) {
+    int ret = mSocket->send(buffer->beginRead(), buffer->readableSize());
+    DEBUG("write %d bytes", ret);
+    if (ret > 0)
+        buffer->get(ret);
+    return ret;
+}
+
+int Connection::writeSocket() {
+    int ret = CONN_CONTINUE;
+    BufferPtr buffer = getSendBuffer();
+    DEBUG("get buffer: %p of size: %lu", buffer, buffer?buffer->readableSize():0);
+    while (true) {
+        if (!buffer || buffer->readableSize()==0) {
+            ret = CONN_UPDATE;
+            disableWrite();
+            break;
+        }
+        // TODO use writev
+        ret = _writeSocket(buffer);
+        if (ret < 0) {
+            if (errno != EAGAIN) {
+                mConnected = false;
+                ret = CONN_REMOVE;
+            } else {
+                ret = CONN_UPDATE; 
+            }
+            break;
+        }
+        if (!buffer->readableSize()) {
+            removeBuffer();
+            mWriteCallback();
+        }
+        buffer = getSendBuffer();
+        DEBUG("get buffer: %p of size: %lu", buffer, buffer?buffer->readableSize():0);
+    }
+    return ret;
+}
+
+// return -1 means the socket can be removed
+// return 1 means the socket need be updated
 int Connection::handle(const epoll_event& event) {
-    int ret = 0;
+    int ret = CONN_CONTINUE;
+    int readCount = 0;
     if (event.events & EPOLLIN) {
-        ret = mReadCallback(mSocket);
+        DEBUG("handle in event");
+        readCount = readSocket();
+        if (readCount <= 0) {
+            ret = CONN_REMOVE;
+            mConnected = false;
+        } else {
+            ret = CONN_CONTINUE;
+            mReadCallback(mReadBuffer);
+        }
     } else if (event.events & EPOLLOUT) {
         if (!mConnected) {
-            // check connected
+            DEBUG("handle conn event");
+            // TODO check connected
             mConnected = true;
-            ret = mConnCallback(mSocket);
-        }
-        else {
-            ret = mWriteCallback(mSocket);
+            mConnCallback();
+        } else {
+            DEBUG("handle write event");
+            ret = writeSocket();
         }
     } else {
         NOTICE("unknow event");
-    }
-    if (ret < 0) {
-        // handleError();
     }
     return ret;
 }

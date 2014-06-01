@@ -5,47 +5,57 @@
 #include "InetAddress.h"
 #include "EventLoop.h"
 #include "Condition.h"
+#include "HttpRequest.h"
+#include "HttpResponse.h"
 #include <boost/bind.hpp>
 
 using namespace dyc;
 using namespace std;
 
 typedef dyc::Socket* SocketPtr;
-class HttpResponseParse {
 
+class HttpResponseParser {
 public:
-    HttpResponseParse():mPos(0), mCond(mLock){}
+    HttpResponseParser():mPos(0), mCond(mLock){}
 
-    int readData(SocketPtr socket) {
-        char buf[1024];
-        cout << "in read data" << endl;
-
-        int count = socket->recv(buf, sizeof(buf));
-        cout << "recv " << count << " bytes with errno: " << errno << " " << strerror(errno) << endl;
-
-        if (count == 0) {
-            mCond.notify();
-            return 0;
+    int parseRespLine(std::string line) {
+        size_t vEnd = line.find(' ');
+        if (vEnd != std::string::npos) {
+            mResp.setVersion(line.substr(0, vEnd));
         }
-
-        if (count > 0) {
-            mResponse.append(buf, count);
-            findStr(mResponse, ("\r\n\r\n"));
-        }
-
-        return count;
     }
 
-    int conn(SocketPtr socket) {
+
+    int parseRespHeader(std::string line) {
+        size_t comma = line.find(":");
+        mResp.setHeader(trim(line.substr(0, comma)), 
+                trim(line.substr(comma, line.size()-1-comma)));
+    }
+
+    int parse(const std::string& resp) {
+        vector<std::string> tokens;
+        getToken(resp, tokens, "\n");
+
+        parseRespLine(tokens[0]);
+        for (int i=1; i<tokens.size(); ++i) {
+            if (tokens[i] == "")
+                break;
+            parseRespHeader(tokens[i]);
+        }
+    }
+
+    int readData(Buffer& buffer) {
+        size_t size = buffer.readableSize();
+        char* buf = buffer.get(size);
+        std::string resp(buf, size);
+        parse(resp);
+//        mResponse.append(buffer.get(buffer.readableSize()));
+        mCond.notify();
+        return 0;
+    }
+
+    int conn() {
         cout << "connect success" << endl;
-    }
-
-    int writeData(SocketPtr socket) {
-        std::string reqLine ="GET /gz2?gz2=false HTTP/1.1\r\nHost: localhost\r\n\r\n";
-        int count = socket->send(reqLine.c_str(), reqLine.size()-mPos);
-        mPos += count;
-        cout << "send " << count << " bytes" << endl;
-        return count;
     }
 
     std::string out() {
@@ -53,9 +63,8 @@ public:
     }
 
     void wait() {
-        cout << "will wait" << endl;
+        MutexLockGuard guard(mLock);
         mCond.wait();
-        cout << "awake" << endl;
     }
 
 private:
@@ -63,6 +72,7 @@ private:
     int mPos;
     dyc::MutexLock mLock;
     dyc::Condition mCond;
+    HttpResponse mResp;
 };
 
 void* thr_fn(void* data) {
@@ -70,34 +80,59 @@ void* thr_fn(void* data) {
     p->loop();
 }
 
+class Client {
+
+    typedef boost::function< int (Buffer&) > ReadCallbackFunc;
+    typedef boost::function< int () > ConnCallbackFunc;
+    typedef boost::function< int () > WriteCallbackFunc;
+
+public:
+    Client() {
+    }
+
+    Connection* connect(const InetAddress& addr) {
+        mEpoller = boost::shared_ptr<Epoller>(NEW Epoller());
+        mEpoller->createEpoll();
+
+        mLoop = boost::shared_ptr<EventLoop>(NEW EventLoop(mEpoller));
+        mSock = NEW Socket(false);
+
+        Connection* conn = NEW Connection(mSock, mLoop);
+        mEpoller->addRW(conn);
+
+        sleep(1);
+        mSock->connect(addr);
+        return conn;
+    }
+
+    void start () {
+        pthread_t ntid;
+        pthread_create(&ntid, NULL, thr_fn, mLoop.get());
+    }
+
+private:
+    SocketPtr mSock;
+    boost::shared_ptr<EventLoop> mLoop;
+    boost::shared_ptr<Epoller> mEpoller;
+};
+
 int main() {
-    Socket sock(false);
-
     InetAddress addr("127.0.0.1", 8714);
+    Client client;
+    Connection* conn = client.connect(addr);
 
-    boost::shared_ptr<Epoller> epoller = boost::shared_ptr<Epoller>(NEW Epoller());
-    epoller->createEpoll();
-    EventLoop* p = NEW EventLoop(epoller);
-    boost::shared_ptr<EventLoop> loop = boost::shared_ptr<EventLoop>(p);
+    HttpResponseParser parser;
+    boost::function< int (Buffer&) > readfunc = boost::bind(&HttpResponseParser::readData, &parser, _1);
+    boost::function< int () > connfunc = boost::bind(&HttpResponseParser::conn, &parser);
 
-    Connection conn(&sock, loop);
-    epoller->addRW(&conn);
+    conn->setReadCallback(readfunc);
+    conn->setConnCallback(connfunc);
+    client.start();
 
-    sock.connect(addr);
-    HttpResponseParse parser;
+    HttpRequest req;
+    req.setHeader("host", "fedora");
 
-    boost::function< int (SocketPtr) > readfunc = boost::bind(&HttpResponseParse::readData, &parser, _1);
-    conn.setReadCallback(readfunc);
-
-    boost::function< int (SocketPtr) > connfunc = boost::bind(&HttpResponseParse::readData, &parser, _1);
-    conn.setConnCallback(connfunc);
-
-    boost::function< int (SocketPtr) > writefunc = boost::bind(&HttpResponseParse::writeData, &parser, _1);
-    conn.setWriteCallback(writefunc);
-
-    pthread_t ntid;
-    pthread_create(&ntid, NULL, thr_fn, p);
-
+    conn->send(req.toString());
     parser.wait();
 
     cout << "output: " << parser.out() << endl;
@@ -106,10 +141,12 @@ int main() {
 
 
 //    sock.connect(addr);
-//    std::string reqLine ="GET /gz2 HTTP/1.1\r\nHost: localhost\r\n\r\n";
+//    std::string reqLine ="GET /gz2/?gz2=false HTTP/1.1\nHost: localhost\n\n";
 //    sock.send(reqLine.c_str(), reqLine.size());
 //    char buf[1024];
 //    memset(buf, 0, 1024);
 //    sock.recv(buf, 1024);
-//
 //    printf("output: =========\n%s\n==========\n", buf);
+//    return 0;
+
+

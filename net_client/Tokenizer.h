@@ -2,7 +2,22 @@
 #include <iostream>
 #include <assert.h>
 
-std::string trim(std::string input) {
+bool isBlankChar(char c) {
+    if (c == ' ' 
+        ||  c == '\t'
+        ||  c == '\r'
+        ||  c == '\n')
+        return true;
+    return false;
+}
+
+std::string trim(const std::string& input) {
+    size_t size = input.size();
+    if (size == 0 || 
+            (!isBlankChar(input[0]) && !isBlankChar(input[size-1]) )
+            ) {
+        return input;
+    }
     return input.substr(input.find_first_not_of(" \t\n\r"), input.find_last_not_of(" \t\n\r")+1);
 }
 

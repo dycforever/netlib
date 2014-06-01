@@ -5,6 +5,7 @@
 
 #include "InetAddress.h"
 #include "Socket.h"  
+#include "log.h"  
 
 namespace dyc {
 
@@ -160,6 +161,7 @@ void Socket::setKeepAlive(bool on) {
 
 int Socket::send(const char* buf, size_t len) {
 write_again:
+    DEBUG("raw socket writing: %s", buf);
     int count = write(mSockfd, buf, len);
     if (count > 0) {
         return count;

@@ -3,8 +3,10 @@
 #define NETLIB_LOG_H
 
 #include <errno.h> 
+#include <iostream> 
+#include <stdio.h> 
 
-enum COLOR{BLACK=0,RED=1,GREEN=2,YELLOW=3,BLUE=4,WHITE=9};                                                                                        
+enum COLOR{BLACK=0,RED=1,GREEN=2,YELLOW=3,BLUE=4,WHITE=9};
 enum Format{BOLD=1,NORMAL,UNDERSCORE=4,REVERSE=7,DELETE=9};
 inline void PRINT_COLOR(COLOR foreground,COLOR background=BLACK,Format format=BOLD){
     std::cout<<"\E[3"<<foreground<<";4"<<background<<";"<<format<<"m";

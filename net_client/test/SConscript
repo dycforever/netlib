@@ -1,0 +1,15 @@
+#
+env = Environment(CPPPATH = ['..'], CCFLAGS = '-g')
+
+test_sources = [str(fn) for fn in Glob('*.cpp')]
+
+libsname=[
+     'netlib',
+     'pthread'
+]
+
+#env.Repository('/home/dyc/github/program/netlib/net_client')
+
+for file in test_sources:
+    env.Program(file[0:file.find(".cpp")], [file], LIBPATH=[".."], LIBS=libsname)
+

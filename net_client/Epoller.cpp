@@ -122,22 +122,4 @@ int Epoller::updateEvent(ConnectionPtr socket) {
     return 0;
 }
 
-//int Epoller::updateEvent(ConnectionPtr socket) {
-//  Poller::assertInLoopThread();
-//  const int stat = socket->stat();
-//  // new 和 deleted状态都表示epoll没有在监听，区别在于map是否建立
-//  if (stat == kNew || stat == kDeleted) {
-//    socket->set_stat(kAdded);
-//    update(EPOLL_CTL_ADD, socket);
-//  } else { //stat == kAdded 
-//    if (socket->isNoneEvent()) {
-//      update(EPOLL_CTL_DEL, socket);
-//      socket->set_stat(kDeleted);
-//    } else {
-//      update(EPOLL_CTL_MOD, socket);
-//    }
-//  }
-//  return 0;
-//}
-
 }

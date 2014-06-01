@@ -1,27 +1,44 @@
-#
+#!/usr/bin/python
+sub = SConscript(['test/SConscript'])
+
 env = Environment(CPPPATH = ['.'], CCFLAGS = '-g')
 
-#
-#netlib_sources = [str(fn) for fn in Glob('*.cpp') if str(fn) not in ['main.cpp']]
-#
-#env.Library(target = 'netlib',
-#             source = netlib_sources,
-#             dirInPackage = 'lib64')
-#
-
-
+netlib_sources = [str(fn) for fn in Glob('*.cpp') if str(fn) not in ['main.cpp']]
+env.Library(target = 'netlib',
+             source = netlib_sources,
+             dirInPackage = 'lib64')
 libsname=[
-#     'netlib',
-     'alog',
+     'netlib',
      'pthread'
 ]
 
+main = env.Program("main", ["main.cpp"], LIBPATH=["."], LIBS=libsname)
 
-#Repository('/home/dingyc/tools/zlib')
-#env.Program("main", ["main.cpp"], LIBPATH=["."], LIBS=libsname)
+# installation
+env.Install("/home/dyc/intall_test/", main)
+env.Alias("install", "/home/dyc/intall_test/")
 
+runTests = """
+echo "start run test !!!"
+./test/BufferTest
+./test/HttpRequestTest
+"""
 
-env.Program("log", ["log.cpp"], LIBPATH=["."], LIBS=libsname)
+test = env.Command( target = "test", source = "", action = runTests)
+#Depends( test, main )
+env.AlwaysBuild(test)
 
-env.Program("BufferTest", ["BufferTest.cpp"], LIBPATH=["."], LIBS=libsname)
+#ut = Builder(action = 'echo "running unit test" ')
+
+env = Environment(tools=['default', 'packaging'])
+env.Package( NAME           = 'httpc',
+        VERSION        = '0.0.1',
+        PACKAGEVERSION = 0,
+        PACKAGETYPE    = 'rpm',
+        LICENSE        = 'gpl',
+        SUMMARY        = 'balalalalal',
+        DESCRIPTION    = 'this should be really really long',
+        X_RPM_GROUP    = 'Application/fu',
+        SOURCE_URL     = 'http://foo.org/foo-1.2.3.tar.gz'
+        )
 

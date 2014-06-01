@@ -6,6 +6,9 @@
 #include <assert.h>
 #include <pthread.h>
 
+#include "common.h"
+#include "log.h"
+
 
 __BEGIN_DECLS
 extern void __assert_perror_fail (int errnum,
@@ -21,42 +24,35 @@ __END_DECLS
 
 namespace dyc {
 
-class MutexLock : boost::noncopyable
-{
+class MutexLock : boost::noncopyable {
  public:
   MutexLock()
-    : _holder(0)
-  {
+    : _holder(0) {
     MCHECK(pthread_mutex_init(&_mutex, NULL));
   }
 
-  ~MutexLock()
-  {
+  ~MutexLock() {
     assert(_holder == 0);
     MCHECK(pthread_mutex_destroy(&_mutex));
   }
 
   // must be called when locked, i.e. for assertion
-  bool isLockedByThisThread() const
-  {
+  bool isLockedByThisThread() const {
     return _holder == pthread_self();
   }
 
-  void assertLocked() const
-  {
+  void assertLocked() const {
     assert(isLockedByThisThread());
   }
 
   // internal usage
 
-  void lock()
-  {
+  void lock() {
     MCHECK(pthread_mutex_lock(&_mutex));
     _holder = pthread_self();
   }
 
-  void unlock()
-  {
+  void unlock() {
     _holder = 0;
     MCHECK(pthread_mutex_unlock(&_mutex));
   }
@@ -72,8 +68,7 @@ class MutexLock : boost::noncopyable
   pthread_mutex_t _mutex;
   pthread_t _holder;
 
-  class UnassignGuard : boost::noncopyable
-  {
+  class UnassignGuard : boost::noncopyable {
    public:
     UnassignGuard(MutexLock& owner)
       : _owner(owner)
@@ -88,14 +83,12 @@ class MutexLock : boost::noncopyable
 
    private:
     MutexLock& _owner;
-  };
-
+  }; // UnassignGuard
 
 };
 
 
-class MutexLockGuard : boost::noncopyable
-{
+class MutexLockGuard : boost::noncopyable {
  public:
   explicit MutexLockGuard(MutexLock& mutex)
     : _mutex(mutex)
