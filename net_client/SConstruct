@@ -33,16 +33,17 @@ env.AlwaysBuild(test)
 
 #ut = Builder(action = 'echo "running unit test" ')
 
-print "#############################################################"
-print "installed: ", FindInstalledFiles()
-env.Package( NAME           = 'httpc',
-        VERSION        = '0.0.1',
-        PACKAGEVERSION = 0,
-        PACKAGETYPE    = 'rpm',
-        LICENSE        = 'gpl',
-        SUMMARY        = 'balalalalal',
-        DESCRIPTION    = 'this should be really really long',
-        X_RPM_GROUP    = 'Application/fu', 
-        source = FindInstalledFiles()
-        )
+# print "#############################################################"
+# print "installed: ", FindInstalledFiles()
+# env.Package( NAME           = 'httpc',
+#         VERSION        = '0.0.1',
+#         PACKAGEVERSION = 0,
+#         PACKAGETYPE    = 'rpm',
+#         LICENSE        = 'gpl',
+#         SUMMARY        = 'balalalalal',
+#         DESCRIPTION    = 'this should be really really long',
+#         X_RPM_GROUP    = 'Application/fu', 
+#         source = FindInstalledFiles()
+#         )
+# 
 

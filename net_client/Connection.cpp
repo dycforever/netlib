@@ -52,6 +52,7 @@ Connection::BufferPtr Connection::getSendBuffer() {
 int Connection::readSocket() {
     int ret = mSocket->recv(mReadBuffer.beginWrite(), mReadBuffer.writableSize());
     DEBUG("read %d bytes", ret);
+    mReadBuffer.hasWriten(ret);
     return ret;
 }
 
@@ -101,8 +102,8 @@ int Connection::handle(const epoll_event& event) {
     int ret = CONN_CONTINUE;
     int readCount = 0;
     if (event.events & EPOLLIN) {
-        DEBUG("handle in event");
         readCount = readSocket();
+        DEBUG("handle in event, read %d bytes", readCount);
         if (readCount <= 0) {
             ret = CONN_REMOVE;
             mConnected = false;

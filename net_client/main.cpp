@@ -9,6 +9,8 @@
 #include "HttpResponse.h"
 #include <boost/bind.hpp>
 
+#include <fstream>
+
 using namespace dyc;
 using namespace std;
 
@@ -19,9 +21,20 @@ public:
     HttpResponseParser():mPos(0), mCond(mLock){}
 
     int parseRespLine(std::string line) {
+        cout << "resp line: " << line << endl;
         size_t vEnd = line.find(' ');
         if (vEnd != std::string::npos) {
             mResp.setVersion(line.substr(0, vEnd));
+        }
+
+        size_t codeStart = (vEnd + 1);
+        if (vEnd != std::string::npos) {
+            mResp.setState(line.substr(codeStart, 3));
+        }
+
+        size_t decsStart = codeStart + 4;
+        if (vEnd != std::string::npos) {
+            mResp.setDesc(line.substr(decsStart, line.size()-decsStart));
         }
     }
 
@@ -34,10 +47,10 @@ public:
 
     int parse(const std::string& resp) {
         vector<std::string> tokens;
-        getToken(resp, tokens, "\n");
-
+        getToken(resp, tokens, "\r\n");
         parseRespLine(tokens[0]);
         for (int i=1; i<tokens.size(); ++i) {
+            cout << "header line: " << tokens[i] << endl;
             if (tokens[i] == "")
                 break;
             parseRespHeader(tokens[i]);
@@ -45,11 +58,11 @@ public:
     }
 
     int readData(Buffer& buffer) {
+//        mResponse.append(buffer.get(buffer.readableSize()));
         size_t size = buffer.readableSize();
         char* buf = buffer.get(size);
         std::string resp(buf, size);
         parse(resp);
-//        mResponse.append(buffer.get(buffer.readableSize()));
         mCond.notify();
         return 0;
     }
@@ -59,7 +72,7 @@ public:
     }
 
     std::string out() {
-        return mResponse;
+        return mResp.toString();
     }
 
     void wait() {
@@ -135,7 +148,7 @@ int main() {
     conn->send(req.toString());
     parser.wait();
 
-    cout << "output: " << parser.out() << endl;
+    cout << "output response: " << parser.out() << endl;
     return 0;
 }
 
