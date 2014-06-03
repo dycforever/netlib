@@ -9,6 +9,7 @@
 
 #include "InetAddress.h"
 #include "Mutex.h"
+#include "SpinLock.h"
 #include "Socket.h"
 #include "Buffer.h"
 #include "common.h"
@@ -83,7 +84,7 @@ private:
     Buffer mReadBuffer;
     std::list<BufferPtr> mSendBuffers;
     
-    MutexLock mLock;
+    SpinLock mLock;
     BufferPtr getSendBuffer();
 };
 

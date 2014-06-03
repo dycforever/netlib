@@ -1,6 +1,7 @@
 
 #include <string>
 #include <map>
+#include <vector>
 
 class HttpResponse {
 
@@ -15,6 +16,10 @@ private:
     bool mChunked;
     std::string mStr;
 
+    //TODO 
+    std::vector<std::string> mChunks;
+
+    void parseChunk(const std::string& b);
     typedef std::map<std::string, std::string>::iterator MapIter;
 public:
     HttpResponse():mBody(""), mChunked(false),

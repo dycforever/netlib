@@ -57,7 +57,7 @@ private:
 //    boost::shared_ptr<Epoller> _poller;
     Epoller* _poller;
 
-    MutexLock _mutex;
+    MutexLock mLock;
     std::vector<DelayFunctor> _waitQueue;
 };
 

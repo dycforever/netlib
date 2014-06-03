@@ -17,13 +17,13 @@ Connection::Connection(SocketPtr socket, EventLoop* loop):
     }
 
 void Connection::addBuffer(const char* data, int64_t size) {
-    MutexLockGuard g(mLock);
+    LockGuard<SpinLock> g(mLock);
     DEBUG("add buffer in send queue");
     mSendBuffers.push_back(NEW Buffer(data, size, true));
 }
 
 void Connection::removeBuffer() {
-    MutexLockGuard g(mLock);
+    LockGuard<SpinLock> g(mLock);
     DEBUG("remove buffer in send queue");
     DELETE(mSendBuffers.front());
     mSendBuffers.pop_front();
@@ -41,7 +41,7 @@ int Connection::send(const std::string& str) {
 
 
 Connection::BufferPtr Connection::getSendBuffer() {
-    MutexLockGuard g(mLock);
+    LockGuard<SpinLock> g(mLock);
     if (mSendBuffers.size() == 0) {
         return NULL;
     }

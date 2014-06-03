@@ -45,7 +45,6 @@ void EventLoop::loop()
   
     while (!quit_)
     {
-      sleep(1);
       ++iteration_;
   
       int nfds = _poller->poll(_active_events);
@@ -108,7 +107,7 @@ void EventLoop::runInLoop(const DelayFunctor& cb)
 void EventLoop::queueInLoop(const DelayFunctor& cb)
 {
   {
-  MutexLockGuard lock(_mutex);
+  LockGuard<MutexLock> lock(mLock);
   _waitQueue.push_back(cb);
   }
 
@@ -116,7 +115,7 @@ void EventLoop::queueInLoop(const DelayFunctor& cb)
 
 void EventLoop::callPendingFunctors()
 {
-    MutexLockGuard lock(_mutex);
+    LockGuard<MutexLock> lock(mLock);
     std::vector<DelayFunctor>::iterator iter;
     for (iter = _waitQueue.begin(); iter != _waitQueue.end(); ++iter) {
         (*iter)();

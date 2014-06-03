@@ -17,50 +17,92 @@ using namespace std;
 typedef dyc::Socket* SocketPtr;
 
 class HttpResponseParser {
+private:
+    enum ParsePhase {LINE, HEADER, BODY};
+    enum ParseRet {DONE, WAIT};
 public:
-    HttpResponseParser():mPos(0), mCond(mLock){}
+    HttpResponseParser():mResponse(""), mPos(0), mCond(mLock), mPhase(LINE){}
 
-    int parseRespLine(std::string line) {
+    ParseRet parseRespLine(std::string line) {
         size_t vEnd = line.find(' ');
         if (vEnd != std::string::npos) {
             mResp.setVersion(line.substr(0, vEnd));
+        } else {
+            return WAIT;
         }
 
         size_t codeStart = (vEnd + 1);
         if (vEnd != std::string::npos) {
             mResp.setState(line.substr(codeStart, 3));
+        } else {
+            return WAIT;
         }
 
         size_t decsStart = codeStart + 4;
         if (vEnd != std::string::npos) {
             mResp.setDesc(line.substr(decsStart, line.size()-decsStart));
+        } else {
+            return WAIT;
         }
+
+        return DONE;
     }
 
 
-    int parseRespHeader(std::string line) {
+    ParseRet parseRespHeader(std::string line) {
         size_t comma = line.find(":");
-        mResp.setHeader(trim(line.substr(0, comma)), 
-                trim(line.substr(comma+1, line.size()-1-comma)));
+        if (comma != std::string::npos) {
+            mResp.setHeader(trim(line.substr(0, comma)), 
+                    trim(line.substr(comma+1, line.size()-1-comma)));
+            return DONE;
+        }
+        return WAIT;
     }
 
     int parse(const std::string& resp) {
         std::string token;
         size_t start = 0;
-        start = getToken(resp, start, token, "\r\n");
-        parseRespLine(token);
-
-        while(1) {
-            start = getToken(resp, start, token, "\r\n");
-            cout << "header line: " << token << endl;
-            if (token == "")
-                break;
-            parseRespHeader(token);
+        ParseRet ret;
+        mResponse.append(resp);
+//        cout << "at first:" << mResponse << endl;
+        if (mPhase == LINE) {
+            // TODO if too long, return error
+            start = getToken(mResponse, start, token, "\r\n");
+            ret = parseRespLine(token);
+            if (ret == DONE) {
+                mPhase = HEADER;
+                mResponse = mResponse.substr(start, mResponse.size()-start);
+                start = 0;
+            } else {
+                cout << "return WATI" << endl;
+                return WAIT;
+            }
         }
-        std::string body(resp.begin()+start, resp.end());
 
+//        cout << "after parse header:" << mResponse << endl;
+        while(mPhase == HEADER) {
+            size_t ostart = start;
+            start = getToken(mResponse, start, token, "\r\n");
+//            cout << "header line: " << token << endl;
+            if (token == "") {
+                mResponse = mResponse.substr(start, mResponse.size()-start);
+                mPhase = BODY;
+                start = 0;
+                break;
+            }
+            ret = parseRespHeader(token);
+            if (ret != DONE) {
+                mResponse = mResponse.substr(ostart, mResponse.size()-ostart);
+                cout << "return WATI2" << endl;
+                return WAIT;
+            }
+        }
+        if (start != 0) {
+            mResponse = mResponse.substr(start, mResponse.size()-start);
+        }
 //        cout << "body: " << body << endl;
-        mResp.setBody(body);
+        mResp.setBody(mResponse);
+        return DONE;
     }
 
     int readData(Buffer& buffer) {
@@ -68,8 +110,9 @@ public:
         char* buf = buffer.get(size);
         std::cout << "read " << size << " bytes data" << std::endl;
         std::string resp(buf, size);
-        parse(resp);
-        mCond.notify();
+        if (parse(resp) == DONE) {
+            mCond.notify();
+        }
         return 0;
     }
 
@@ -81,7 +124,7 @@ public:
     }
 
     void wait() {
-        MutexLockGuard guard(mLock);
+        LockGuard<MutexLock> guard(mLock);
         mCond.wait();
     }
 
@@ -91,6 +134,8 @@ private:
     dyc::MutexLock mLock;
     dyc::Condition mCond;
     HttpResponse mResp;
+    ParsePhase mPhase;
+    
 };
 
 void* thr_fn(void* data) {
@@ -120,7 +165,6 @@ public:
         Connection* conn = NEW Connection(mSock, mLoop);
         mEpoller->addRW(conn);
 
-        sleep(1);
         mSock->connect(addr);
         return conn;
     }
@@ -138,59 +182,60 @@ private:
     Epoller* mEpoller;
 };
 
- int main(int argc, char** argv) {
-     InetAddress addr("127.0.0.1", 8714);
-     Socket sock(true);
-     sock.connect(addr);
-
-     HttpRequest req;
-     if (argc > 1) {
-         req.setUrl(argv[1]);
-     }
-     req.setHeader("host", "localhost");
- 
-     string reqLine = req.toString();
-     sock.send(reqLine.c_str(), reqLine.size());
-
-     char buf[1024];
-     memset(buf, 0, 1024);
-     int recvCount = sock.recv(buf, 1024);
-     std::cout << "recv " << recvCount << " bytes" << std::endl;
-     std::string recvStr(buf, recvCount);
-
-     HttpResponseParser parser;
-     parser.parse(recvStr);
-     cout << "parse success"<< endl;
-
-     cout << "output response: " << parser.out() << endl;
-     return 0;
- }
-
-
-
 // int main(int argc, char** argv) {
 //     InetAddress addr("127.0.0.1", 8714);
-//     Client client;
-//     Connection* conn = client.connect(addr);
-// 
-//     HttpResponseParser parser;
-//     boost::function< int (Buffer&) > readfunc = boost::bind(&HttpResponseParser::readData, &parser, _1);
-//     boost::function< int () > connfunc = boost::bind(&HttpResponseParser::conn, &parser);
-// 
-//     conn->setReadCallback(readfunc);
-//     conn->setConnCallback(connfunc);
-//     client.start();
+//     Socket sock(true);
+//     sock.connect(addr);
 // 
 //     HttpRequest req;
 //     if (argc > 1) {
 //         req.setUrl(argv[1]);
 //     }
 //     req.setHeader("host", "localhost");
+//     req.setVersion("HTTP/1.0");
 // 
-//     conn->send(req.toString());
-//     parser.wait();
+//     string reqLine = req.toString();
+//     sock.send(reqLine.c_str(), reqLine.size());
 // 
-//     cout << "output response: " << parser.out() << endl;
-//     return 0;
-// }
+//     char buf[1024];
+//     memset(buf, 0, 1024);
+//     int recvCount = sock.recv(buf, 1024);
+//     std::cout << "recv " << recvCount << " bytes" << std::endl;
+//     std::string recvStr(buf, recvCount);
+// 
+//     HttpResponseParser parser;
+//     parser.parse(recvStr);
+//     cout << "parse success"<< endl;
+// 
+//    cout << "output response: " << parser.out() << endl;
+//    return 0;
+//}
+
+
+
+int main(int argc, char** argv) {
+    InetAddress addr("127.0.0.1", 8714);
+    Client client;
+    Connection* conn = client.connect(addr);
+
+    HttpResponseParser parser;
+    boost::function< int (Buffer&) > readfunc = boost::bind(&HttpResponseParser::readData, &parser, _1);
+    boost::function< int () > connfunc = boost::bind(&HttpResponseParser::conn, &parser);
+
+    conn->setReadCallback(readfunc);
+    conn->setConnCallback(connfunc);
+    client.start();
+
+    HttpRequest req;
+    if (argc > 1) {
+        req.setUrl(argv[1]);
+    }
+    req.setHeader("host", "localhost");
+
+    conn->send(req.toString());
+    parser.wait();
+
+    cout << "output response: " << parser.out() << endl;
+    return 0;
+}
 

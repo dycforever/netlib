@@ -1,7 +1,7 @@
 #!/usr/bin/python
 sub = SConscript(['test/SConscript'], variant_dir='build')
 
-env = Environment(CPPPATH = ['.', '/home/dyc/tools/zlib'], CCFLAGS = '', tools=['default', 'packaging'])
+env = Environment(CPPPATH = ['.', '/home/dyc/tools/zlib'], CCFLAGS = '-g ', tools=['default', 'packaging'])
 
 debug = ARGUMENTS.get('debug', 0)
 if int(debug):
@@ -21,7 +21,7 @@ libsname=[
      'pthread'
 ]
 
-main = env.Program("main", ["main.cpp"], LIBPATH=['.', '/home/dyc/tools/zlib'], LIBS=libsname)
+main = env.Program("main", ["main.cpp"], LINKFLAGS="", LIBPATH=['.', '/home/dyc/tools/zlib'], LIBS=libsname)
 
 # installation
 env.Install("/home/dyc/intall_test/", main)

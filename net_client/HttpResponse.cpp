@@ -46,8 +46,7 @@ std::string decode(const char* data, size_t size)
     do {
         strm.avail_out = size;
         strm.next_out = out;
-        printHeader((unsigned char*)strm.next_in, strm.avail_in, "strm.avail_in");
-        std::cout << "hehe" << std::endl;
+//        printHeader((unsigned char*)strm.next_in, strm.avail_in, "strm.avail_in");
         ret = inflate(&strm, Z_NO_FLUSH);
         assert(ret != Z_STREAM_ERROR);  /* state not clobbered */
         switch (ret) {
@@ -64,21 +63,10 @@ std::string decode(const char* data, size_t size)
         }
         have = size- strm.avail_out;
         res.append((const char*)out, have);
-
-//        std::cout << " ===================" << std::endl;
-//        std::cout << "append " << have << ", res: " << res << std::endl;
-
     } while (ret != Z_STREAM_END);
     fclose(fp);
-
-    /* done when inflate() says it's done */
-
-    /* clean up and return */
     (void)inflateEnd(&strm);
     delete[] out;
-
-
-    res.append("\0", 1);
     return res;
 }
 
@@ -88,21 +76,27 @@ const std::string& HttpResponse::toString() {
     for (MapIter iter = mHeaders.begin(); iter != mHeaders.end(); ++iter) {
         mStr.append(iter->first).append(" ==> ").append(iter->second).append("\n");
     }
-    if (mBody[0] == 0x00 && mBody[1] == 0x01 && mBody[2] == 0x02) {
-        mStr.append("a gz2 body: \n");
-        mBody[0] = (char)0x1f;
-        mBody[1] = (char)0x8b;
-        mBody[2] = (char)0x08;
-        std::string gztxt = decode(mBody.c_str(), mBody.size());
-        mStr.append(gztxt);
-    } else if (mBody[0] == (char)0x1f && mBody[1] == (char)0x8b && mBody[2] == (char)0x08) {
-        mStr.append("a gzip body: \n");
-        std::string gztxt = decode(mBody.c_str(), mBody.size());
-        mStr.append(gztxt);
-    } else {
-        mStr.append("text body:");
-        mStr.append(mBody);
+    for (int i=0; i<mChunks.size(); ++i) {
+        char* buf = const_cast<char*>(mChunks[i].c_str());
+        assert(buf != NULL);
+
+        if (buf[0] == 0x00 && buf[1] == 0x01 && buf[2] == 0x02) {
+            mStr.append("a gz2 body: \n");
+            buf[0] = (char)0x1f;
+            buf[1] = (char)0x8b;
+            buf[2] = (char)0x08;
+            std::string gztxt = decode(buf, mChunks[i].size());
+            mStr.append(gztxt);
+        } else if (buf[0] == (char)0x1f && buf[1] == (char)0x8b && buf[2] == (char)0x08) {
+            mStr.append("a gzip body: \n");
+            std::string gztxt = decode(buf, mChunks[i].size());
+            mStr.append(gztxt);
+        } else {
+            mStr.append("text body:");
+            mStr.append(buf);
+        }
     }
+
     return mStr;
 }
 
@@ -130,10 +124,9 @@ void HttpResponse::setDesc(const std::string& d) {
     mDesc = d;
 }
 
-std::string parseChunk(const std::string& b) {
+void HttpResponse::parseChunk(const std::string& b) {
     size_t start = 0;
     std::string token;
-    std::string res;
     while(1) {
         start = getToken(b, start, token, "\r\n");
         if (start == std::string::npos) {
@@ -150,30 +143,19 @@ std::string parseChunk(const std::string& b) {
             break;
         std::string chunk(b.begin()+start, b.begin()+start+chunkSize);
         start += chunkSize;
-        res += chunk;
+        mChunks.push_back(chunk);
     }
-    return res;
 }
 
 void HttpResponse::setBody(const std::string& b) {
     mBody = b;
     if (mChunked) {
         std::cout << "parsing chunk !!" << std::endl;
-        std::string body = parseChunk(b);
-        mBody = body;
-//        printHeader((unsigned char*)mBody, mBodySize, "mBody");
-//        std::cout << "mBody: " << (void*) mBody  << " size: " << mBodySize 
-//            << " => " 
-//            << (int)mBody[0] << " " 
-//            << (int)mBody[1] << " " 
-//            << (int)mBody[2] << " " << std::endl;
-        std::ofstream out("body.out");
-        out << body;
-        out.close();
-        return;
+        parseChunk(b);
+        mBody = b;
     } 
-    std::ofstream out("out");
-    out << b;
-    out.close();
+//    std::ofstream out("out");
+//    out << b;
+//    out.close();
 }
 
