@@ -9,6 +9,14 @@
 
 #include "zlib.h"
 
+void printHeader(const unsigned char* buf, size_t size, const std::string& pref) {
+        std::cout << pref << ": " << (void*) buf 
+            << " size: " << size << " => " 
+            << (int)buf[0] << " " 
+            << (int)buf[1] << " " 
+            << (int)buf[2] << " " << std::endl;
+}
+
 std::string decode(const char* data, size_t size)
 {
     std::string res;
@@ -23,7 +31,7 @@ std::string decode(const char* data, size_t size)
     strm.opaque = Z_NULL;
     strm.avail_in = 0;
     strm.next_in = Z_NULL;
-    ret = inflateInit2(&strm, 32+MAX_WBITS);
+    ret = inflateInit2(&strm, 32+15);
     if (ret != Z_OK) {
         FATAL("inflateInit2 failed");
         return "";
@@ -31,30 +39,45 @@ std::string decode(const char* data, size_t size)
 
     strm.avail_in = size;
     strm.next_in = (unsigned char*)data;
+    FILE* fp = fopen("zdata","w");
+
+    fwrite(strm.next_in, 1, strm.avail_in, fp);
 
     do {
         strm.avail_out = size;
         strm.next_out = out;
+        printHeader((unsigned char*)strm.next_in, strm.avail_in, "strm.avail_in");
         ret = inflate(&strm, Z_NO_FLUSH);
         assert(ret != Z_STREAM_ERROR);  /* state not clobbered */
         switch (ret) {
             case Z_NEED_DICT:
+                std::cout << "inflate return Z_NEED_DICT" << std::endl;
                 ret = Z_DATA_ERROR;     /* and fall through */
             case Z_DATA_ERROR:
+                std::cout << "inflate return Z_DATA_ERROR" << std::endl;
             case Z_MEM_ERROR:
+                std::cout << "inflate return Z_MEM_ERROR" << std::endl;
                 (void)inflateEnd(&strm);
                 FATAL("inflate failed");
                 return "";
         }
         have = size- strm.avail_out;
         res.append((const char*)out, have);
+
+//        std::cout << " ===================" << std::endl;
+//        std::cout << "append " << have << ", res: " << res << std::endl;
+
     } while (ret != Z_STREAM_END);
+    fclose(fp);
 
     /* done when inflate() says it's done */
 
     /* clean up and return */
     (void)inflateEnd(&strm);
     delete[] out;
+
+
+    res.append("\0", 1);
     return res;
 }
 
@@ -78,8 +101,10 @@ const std::string& HttpResponse::toString() {
         mStr.append("a gzip body: \n");
         std::string gztxt = decode(mBody, mBodySize);
         mStr.append(gztxt);
-    } else
-        mStr.append("unknown body:");
+    } else {
+        mStr.append("text body:");
+        mStr.append(mBody, mBodySize);
+    }
     return mStr;
 }
 
@@ -116,7 +141,6 @@ std::string parseChunk(const std::string& b) {
         if (start == std::string::npos) {
             break;
         }
-        // FIXME
         size_t chunkExt = token.find(";");
         if (chunkExt == std::string::npos) {
             chunkExt = token.size();
@@ -140,7 +164,13 @@ void HttpResponse::setBody(const std::string& b) {
         std::cout << "parsing chunk !!" << std::endl;
         std::string body = parseChunk(b);
         mBody = body.c_str();
-        std::cout << "mBody: " << (void*) mBody  << " => " << (int)mBody[0]<< std::endl;
+        mBodySize = body.size();
+        printHeader((unsigned char*)mBody, mBodySize, "mBody");
+//        std::cout << "mBody: " << (void*) mBody  << " size: " << mBodySize 
+//            << " => " 
+//            << (int)mBody[0] << " " 
+//            << (int)mBody[1] << " " 
+//            << (int)mBody[2] << " " << std::endl;
         std::ofstream out("body.out");
         out << body;
         out.close();

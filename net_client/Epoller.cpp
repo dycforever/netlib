@@ -4,7 +4,7 @@
 namespace dyc {
 
 Epoller::Epoller() {
-    _timeout = -1;
+    _timeout = 100;
 }
 
 

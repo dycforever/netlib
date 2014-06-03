@@ -36,7 +36,7 @@ public:
     typedef boost::function< int () > ConnCallbackFunc;
     typedef boost::function< int () > WriteCallbackFunc;
 
-    explicit Connection(SocketPtr, boost::shared_ptr<EventLoop>);
+    explicit Connection(SocketPtr, EventLoop*);
 
     int send(const char* data, int64_t size);
     int send(const std::string&);
@@ -71,7 +71,8 @@ private:
     InetAddress peerAddr;
     SocketPtr mSocket;
 
-    boost::shared_ptr<EventLoop> _loop;
+//    boost::shared_ptr<EventLoop> _loop;
+    EventLoop* _loop;
 
     WriteCallbackFunc mWriteCallback;
     ReadCallbackFunc mReadCallback;

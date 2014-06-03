@@ -15,9 +15,9 @@ inline void UNPRINT_COLOR(){
     std::cout<<"\033[0m";
 }
 
+#define LOGOUT stdout
 #ifdef LOG_DEBUG
 
-#define LOGOUT stdout
 #define NOTICE(format, arguments...) \
     do{ \
         PRINT_COLOR(GREEN); \
@@ -46,6 +46,16 @@ inline void UNPRINT_COLOR(){
     }while(0)
 
 
+#else
+
+#define NOTICE(format, arguments...) void();
+
+#define DEBUG(format, arguments...) void();
+
+#define WARNING(format, arguments...) void();
+
+#endif
+
 
 #define FATAL(format, arguments...) \
     do{ \
@@ -56,16 +66,6 @@ inline void UNPRINT_COLOR(){
         fflush(LOGOUT);\
     } while(0)
 
-#else
 
-#define NOTICE(format, arguments...) void();
-
-#define DEBUG(format, arguments...) void();
-
-#define WARNING(format, arguments...) void();
-
-#define FATAL(format, arguments...) void();
-
-#endif
 
 #endif  // NETLIB_LOG_H

@@ -7,7 +7,7 @@
 
 namespace dyc {
 
-Connection::Connection(SocketPtr socket, boost::shared_ptr<EventLoop> loop): 
+Connection::Connection(SocketPtr socket, EventLoop* loop): 
     mConnected(false), mSocket(socket), _loop(loop), 
     mReadBuffer(NULL, 0) { 
         mReadBuffer.makeSpace(1024*1024);

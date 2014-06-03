@@ -23,7 +23,8 @@ class EventLoop
     typedef Connection* ConnectionPtr;
     typedef struct epoll_event Event;
 
-    EventLoop( boost::shared_ptr<Epoller> );
+//    EventLoop( boost::shared_ptr<Epoller> );
+    EventLoop( Epoller* );
     ~EventLoop();  // force out-line dtor, for scoped_ptr members.
 
     void loop();
@@ -53,7 +54,8 @@ private:
     bool eventHandling_; /* atomic */
     int64_t iteration_;
     pthread_t _threadId;
-    boost::shared_ptr<Epoller> _poller;
+//    boost::shared_ptr<Epoller> _poller;
+    Epoller* _poller;
 
     MutexLock _mutex;
     std::vector<DelayFunctor> _waitQueue;

@@ -62,9 +62,9 @@ public:
     }
 
     int readData(Buffer& buffer) {
-//        mResponse.append(buffer.get(buffer.readableSize()));
         size_t size = buffer.readableSize();
         char* buf = buffer.get(size);
+        std::cout << "read " << size << " bytes data" << std::endl;
         std::string resp(buf, size);
         parse(resp);
         mCond.notify();
@@ -72,7 +72,6 @@ public:
     }
 
     int conn() {
-        cout << "connect success" << endl;
     }
 
     std::string out() {
@@ -108,10 +107,12 @@ public:
     }
 
     Connection* connect(const InetAddress& addr) {
-        mEpoller = boost::shared_ptr<Epoller>(NEW Epoller());
+//        mEpoller = boost::shared_ptr<Epoller>(NEW Epoller());
+        mEpoller = NEW Epoller();
         mEpoller->createEpoll();
 
-        mLoop = boost::shared_ptr<EventLoop>(NEW EventLoop(mEpoller));
+//        mLoop = boost::shared_ptr<EventLoop>(NEW EventLoop(mEpoller));
+        mLoop = NEW EventLoop(mEpoller);
         mSock = NEW Socket(false);
 
         Connection* conn = NEW Connection(mSock, mLoop);
@@ -124,49 +125,70 @@ public:
 
     void start () {
         pthread_t ntid;
-        pthread_create(&ntid, NULL, thr_fn, mLoop.get());
+        pthread_create(&ntid, NULL, thr_fn, mLoop);
     }
 
 private:
     SocketPtr mSock;
-    boost::shared_ptr<EventLoop> mLoop;
-    boost::shared_ptr<Epoller> mEpoller;
+//    boost::shared_ptr<EventLoop> mLoop;
+//    boost::shared_ptr<Epoller> mEpoller;
+    EventLoop* mLoop;
+    Epoller* mEpoller;
 };
 
-int main(int argc, char** argv) {
-    InetAddress addr("127.0.0.1", 8714);
-    Client client;
-    Connection* conn = client.connect(addr);
+ int main(int argc, char** argv) {
+     InetAddress addr("127.0.0.1", 8714);
+     Socket sock(true);
+     sock.connect(addr);
 
-    HttpResponseParser parser;
-    boost::function< int (Buffer&) > readfunc = boost::bind(&HttpResponseParser::readData, &parser, _1);
-    boost::function< int () > connfunc = boost::bind(&HttpResponseParser::conn, &parser);
+     HttpRequest req;
+     if (argc > 1) {
+         req.setUrl(argv[1]);
+     }
+     req.setHeader("host", "localhost");
+ 
+     string reqLine = req.toString();
+     sock.send(reqLine.c_str(), reqLine.size());
 
-    conn->setReadCallback(readfunc);
-    conn->setConnCallback(connfunc);
-    client.start();
+     char buf[1024];
+     memset(buf, 0, 1024);
+     int recvCount = sock.recv(buf, 1024);
+     std::cout << "recv " << recvCount << " bytes" << std::endl;
+     std::string recvStr(buf, recvCount);
 
-    HttpRequest req;
-    if (argc > 1) {
-        cout << "argc: " <<argc << endl;
-        req.setUrl(argv[1]);
-    }
-    req.setHeader("host", "fedora");
+     HttpResponseParser parser;
+     parser.parse(recvStr);
+     cout << "parse success"<< endl;
 
-    conn->send(req.toString());
-    parser.wait();
+     cout << "output response: " << parser.out() << endl;
+     return 0;
+ }
 
-    cout << "output response: " << parser.out() << endl;
-    return 0;
-}
 
-//    sock.connect(addr);
-//    std::string reqLine ="GET /gz2/?gz2=false HTTP/1.1\nHost: localhost\n\n";
-//    sock.send(reqLine.c_str(), reqLine.size());
-//    char buf[1024];
-//    memset(buf, 0, 1024);
-//    sock.recv(buf, 1024);
-//    printf("output: =========\n%s\n==========\n", buf);
-//    return 0;
 
+// int main(int argc, char** argv) {
+//     InetAddress addr("127.0.0.1", 8714);
+//     Client client;
+//     Connection* conn = client.connect(addr);
+// 
+//     HttpResponseParser parser;
+//     boost::function< int (Buffer&) > readfunc = boost::bind(&HttpResponseParser::readData, &parser, _1);
+//     boost::function< int () > connfunc = boost::bind(&HttpResponseParser::conn, &parser);
+// 
+//     conn->setReadCallback(readfunc);
+//     conn->setConnCallback(connfunc);
+//     client.start();
+// 
+//     HttpRequest req;
+//     if (argc > 1) {
+//         req.setUrl(argv[1]);
+//     }
+//     req.setHeader("host", "localhost");
+// 
+//     conn->send(req.toString());
+//     parser.wait();
+// 
+//     cout << "output response: " << parser.out() << endl;
+//     return 0;
+// }
 

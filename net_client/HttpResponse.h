@@ -18,7 +18,8 @@ private:
 
     typedef std::map<std::string, std::string>::iterator MapIter;
 public:
-    HttpResponse() {
+    HttpResponse():mBody(NULL), mBodySize(0), mChunked(false),
+                   mState(""), mDesc(""), mVersion("") {
        mStr.reserve(512);
     }
 

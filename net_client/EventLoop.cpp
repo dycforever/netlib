@@ -11,7 +11,7 @@
 namespace dyc {
 __thread EventLoop* t_loopInThisThread = 0;
 
-EventLoop::EventLoop(boost::shared_ptr<Epoller> poller)
+EventLoop::EventLoop(Epoller* poller)
   : looping_(false),
     quit_(false),
     eventHandling_(false),
