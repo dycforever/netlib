@@ -1,7 +1,12 @@
 #!/usr/bin/python
 sub = SConscript(['test/SConscript'], variant_dir='build')
 
-env = Environment(CPPPATH = ['.', '/home/dyc/tools/zlib'], CCFLAGS = '-g', tools=['default', 'packaging'])
+env = Environment(CPPPATH = ['.', '/home/dyc/tools/zlib'], CCFLAGS = '', tools=['default', 'packaging'])
+
+debug = ARGUMENTS.get('debug', 0)
+if int(debug):
+        env.Append(CCFLAGS = '-g -DDEBUG_LOG')
+
 
 netlib_sources = [str(fn) for fn in Glob('*.cpp') if str(fn) not in ['main.cpp']]
 
