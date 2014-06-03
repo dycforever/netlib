@@ -47,6 +47,7 @@ std::string decode(const char* data, size_t size)
         strm.avail_out = size;
         strm.next_out = out;
         printHeader((unsigned char*)strm.next_in, strm.avail_in, "strm.avail_in");
+        std::cout << "hehe" << std::endl;
         ret = inflate(&strm, Z_NO_FLUSH);
         assert(ret != Z_STREAM_ERROR);  /* state not clobbered */
         switch (ret) {
@@ -89,21 +90,18 @@ const std::string& HttpResponse::toString() {
     }
     if (mBody[0] == 0x00 && mBody[1] == 0x01 && mBody[2] == 0x02) {
         mStr.append("a gz2 body: \n");
-        char* bodybuf = const_cast<char*>(mBody);
-        if (bodybuf != NULL) {
-            bodybuf[0] = (char)0x1f;
-            bodybuf[1] = (char)0x8b;
-            bodybuf[2] = (char)0x08;
-            std::string gztxt = decode(mBody, mBodySize);
-            mStr.append(gztxt);
-        }
+        mBody[0] = (char)0x1f;
+        mBody[1] = (char)0x8b;
+        mBody[2] = (char)0x08;
+        std::string gztxt = decode(mBody.c_str(), mBody.size());
+        mStr.append(gztxt);
     } else if (mBody[0] == (char)0x1f && mBody[1] == (char)0x8b && mBody[2] == (char)0x08) {
         mStr.append("a gzip body: \n");
-        std::string gztxt = decode(mBody, mBodySize);
+        std::string gztxt = decode(mBody.c_str(), mBody.size());
         mStr.append(gztxt);
     } else {
         mStr.append("text body:");
-        mStr.append(mBody, mBodySize);
+        mStr.append(mBody);
     }
     return mStr;
 }
@@ -158,14 +156,12 @@ std::string parseChunk(const std::string& b) {
 }
 
 void HttpResponse::setBody(const std::string& b) {
-    mBody = b.c_str();
-    mBodySize = b.size();
+    mBody = b;
     if (mChunked) {
         std::cout << "parsing chunk !!" << std::endl;
         std::string body = parseChunk(b);
-        mBody = body.c_str();
-        mBodySize = body.size();
-        printHeader((unsigned char*)mBody, mBodySize, "mBody");
+        mBody = body;
+//        printHeader((unsigned char*)mBody, mBodySize, "mBody");
 //        std::cout << "mBody: " << (void*) mBody  << " size: " << mBodySize 
 //            << " => " 
 //            << (int)mBody[0] << " " 

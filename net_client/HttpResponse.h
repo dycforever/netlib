@@ -10,15 +10,14 @@ private:
     std::string mDesc;
     std::string mVersion;
 
-    const char* mBody;
-    size_t mBodySize;
+    std::string mBody;
 
     bool mChunked;
     std::string mStr;
 
     typedef std::map<std::string, std::string>::iterator MapIter;
 public:
-    HttpResponse():mBody(NULL), mBodySize(0), mChunked(false),
+    HttpResponse():mBody(""), mChunked(false),
                    mState(""), mDesc(""), mVersion("") {
        mStr.reserve(512);
     }

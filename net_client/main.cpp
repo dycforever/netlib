@@ -52,12 +52,14 @@ public:
 
         while(1) {
             start = getToken(resp, start, token, "\r\n");
-//            cout << "header line: " << tokens[i] << endl;
+            cout << "header line: " << token << endl;
             if (token == "")
                 break;
             parseRespHeader(token);
         }
         std::string body(resp.begin()+start, resp.end());
+
+//        cout << "body: " << body << endl;
         mResp.setBody(body);
     }
 
