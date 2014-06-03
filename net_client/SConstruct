@@ -1,7 +1,7 @@
 #!/usr/bin/python
 sub = SConscript(['test/SConscript'], variant_dir='build')
 
-env = Environment(CPPPATH = ['.'], CCFLAGS = '-g', tools=['default', 'packaging'])
+env = Environment(CPPPATH = ['.', '/home/dyc/tools/zlib'], CCFLAGS = '-g', tools=['default', 'packaging'])
 
 netlib_sources = [str(fn) for fn in Glob('*.cpp') if str(fn) not in ['main.cpp']]
 
@@ -12,10 +12,11 @@ env.Library(target = 'netlib',
              dirInPackage = 'lib64')
 libsname=[
      'netlib',
+     'z',
      'pthread'
 ]
 
-main = env.Program("main", ["main.cpp"], LIBPATH=["."], LIBS=libsname)
+main = env.Program("main", ["main.cpp"], LIBPATH=['.', '/home/dyc/tools/zlib'], LIBS=libsname)
 
 # installation
 env.Install("/home/dyc/intall_test/", main)

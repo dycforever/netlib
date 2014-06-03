@@ -47,4 +47,4 @@ class Condition : boost::noncopyable {
 };
 
 }
-#endif  // MUDUO_BASE_CONDITION_H
+#endif  // CONDITION_H

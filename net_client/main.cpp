@@ -21,7 +21,6 @@ public:
     HttpResponseParser():mPos(0), mCond(mLock){}
 
     int parseRespLine(std::string line) {
-        cout << "resp line: " << line << endl;
         size_t vEnd = line.find(' ');
         if (vEnd != std::string::npos) {
             mResp.setVersion(line.substr(0, vEnd));
@@ -42,19 +41,24 @@ public:
     int parseRespHeader(std::string line) {
         size_t comma = line.find(":");
         mResp.setHeader(trim(line.substr(0, comma)), 
-                trim(line.substr(comma, line.size()-1-comma)));
+                trim(line.substr(comma+1, line.size()-1-comma)));
     }
 
     int parse(const std::string& resp) {
-        vector<std::string> tokens;
-        getToken(resp, tokens, "\r\n");
-        parseRespLine(tokens[0]);
-        for (int i=1; i<tokens.size(); ++i) {
-            cout << "header line: " << tokens[i] << endl;
-            if (tokens[i] == "")
+        std::string token;
+        size_t start = 0;
+        start = getToken(resp, start, token, "\r\n");
+        parseRespLine(token);
+
+        while(1) {
+            start = getToken(resp, start, token, "\r\n");
+//            cout << "header line: " << tokens[i] << endl;
+            if (token == "")
                 break;
-            parseRespHeader(tokens[i]);
+            parseRespHeader(token);
         }
+        std::string body(resp.begin()+start, resp.end());
+        mResp.setBody(body);
     }
 
     int readData(Buffer& buffer) {
@@ -129,7 +133,7 @@ private:
     boost::shared_ptr<Epoller> mEpoller;
 };
 
-int main() {
+int main(int argc, char** argv) {
     InetAddress addr("127.0.0.1", 8714);
     Client client;
     Connection* conn = client.connect(addr);
@@ -143,6 +147,10 @@ int main() {
     client.start();
 
     HttpRequest req;
+    if (argc > 1) {
+        cout << "argc: " <<argc << endl;
+        req.setUrl(argv[1]);
+    }
     req.setHeader("host", "fedora");
 
     conn->send(req.toString());
@@ -151,7 +159,6 @@ int main() {
     cout << "output response: " << parser.out() << endl;
     return 0;
 }
-
 
 //    sock.connect(addr);
 //    std::string reqLine ="GET /gz2/?gz2=false HTTP/1.1\nHost: localhost\n\n";

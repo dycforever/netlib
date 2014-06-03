@@ -7,19 +7,19 @@ using namespace std;
 
 int test() {
     vector<string> res;
-    getToken("host: localhost \r\n content-length: 123", res, "\r\n");
+    getTokens("host: localhost \r\n content-length: 123", res, "\r\n");
     assert(res.size() == 2);
     assert(res[0] == "host: localhost");
     assert(res[1] == "content-length: 123");
 
     vector<string> res1;
-    getToken(res[0], res1, ":");
+    getTokens(res[0], res1, ":");
     assert(res1.size() == 2);
     assert(res1[0] == "host");
     assert(res1[1] == "localhost");
 
     vector<string> res2;
-    getToken(res[1], res2, ":");
+    getTokens(res[1], res2, ":");
     assert(res2.size() == 2);
     assert(res2[0] == "content-length");
     assert(res2[1] == "123");
