@@ -3,6 +3,8 @@
 #include <map>
 #include <vector>
 
+enum ParseRet {DONE, WAIT};
+
 class HttpResponse {
 
 private:
@@ -16,10 +18,12 @@ private:
     bool mChunked;
     std::string mStr;
 
-    //TODO 
+    //TODO use pointer instead
     std::vector<std::string> mChunks;
+    int strtosize(const std::string& str);
+    int char2num(char c);
 
-    void parseChunk(const std::string& b);
+    ParseRet parseChunk(std::string& b);
     typedef std::map<std::string, std::string>::iterator MapIter;
 public:
     HttpResponse():mBody(""), mChunked(false),
@@ -27,12 +31,17 @@ public:
        mStr.reserve(512);
     }
 
+    size_t isChunked();
+    std::string getContentType() {return mHeaders["content-type"];}
+    std::string getContentEncoding() {return mHeaders["content-encoding"];}
+    std::string bodyToString();
+
     const std::string& toString();
-    void dealBody(const std::string& chunk);
+    void dealChunk(const std::string& chunk, const std::string& ,std::string&);
     void setVersion(const std::string&);
     void setState(const std::string&);
     void setDesc(const std::string&);
     void setHeader(const std::string&, const std::string&);
-    void setBody(const std::string&);
+    ParseRet setBody(std::string&);
 
 };

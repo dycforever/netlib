@@ -19,9 +19,11 @@ typedef dyc::Socket* SocketPtr;
 class HttpResponseParser {
 private:
     enum ParsePhase {LINE, HEADER, BODY};
-    enum ParseRet {DONE, WAIT};
 public:
-    HttpResponseParser():mResponse(""), mPos(0), mCond(mLock), mPhase(LINE){}
+    HttpResponseParser():mResponse(""), mPos(0), mCond(mLock), mPhase(LINE)
+{
+    mTest = false;
+}
 
     ParseRet parseRespLine(std::string line) {
         size_t vEnd = line.find(' ');
@@ -100,15 +102,18 @@ public:
         if (start != 0) {
             mResponse = mResponse.substr(start, mResponse.size()-start);
         }
-//        cout << "body: " << body << endl;
-        mResp.setBody(mResponse);
-        return DONE;
+        ret = mResp.setBody(mResponse);
+        if (ret == DONE) {
+            mPhase = LINE;
+            return DONE;
+        }
+        return WAIT;
     }
 
     int readData(Buffer& buffer) {
         size_t size = buffer.readableSize();
         char* buf = buffer.get(size);
-        std::cout << "read " << size << " bytes data" << std::endl;
+//        std::cout << "read " << size << " bytes data" << std::endl;
         std::string resp(buf, size);
         if (parse(resp) == DONE) {
             mCond.notify();
@@ -123,6 +128,20 @@ public:
         return mResp.toString();
     }
 
+    void dump(const std::string& filename) {
+        ofstream out(filename.c_str());
+        out << "chunk: " << mResp.isChunked() << std::endl
+                << "content-type: " << mResp.getContentEncoding() << std::endl
+                << mResp.bodyToString() << std::endl;
+        out.close();
+    }
+
+    void dump() {
+        std::cout << "chunk: " << mResp.isChunked() << std::endl
+                << "content-type: " << mResp.getContentEncoding() << std::endl
+                << mResp.bodyToString() << std::endl;
+    }
+
     void wait() {
         LockGuard<MutexLock> guard(mLock);
         mCond.wait();
@@ -135,6 +154,8 @@ private:
     dyc::Condition mCond;
     HttpResponse mResp;
     ParsePhase mPhase;
+
+    bool mTest;
     
 };
 
@@ -182,60 +203,132 @@ private:
     Epoller* mEpoller;
 };
 
-// int main(int argc, char** argv) {
-//     InetAddress addr("127.0.0.1", 8714);
-//     Socket sock(true);
-//     sock.connect(addr);
-// 
-//     HttpRequest req;
-//     if (argc > 1) {
-//         req.setUrl(argv[1]);
-//     }
-//     req.setHeader("host", "localhost");
-//     req.setVersion("HTTP/1.0");
-// 
-//     string reqLine = req.toString();
-//     sock.send(reqLine.c_str(), reqLine.size());
-// 
-//     char buf[1024];
-//     memset(buf, 0, 1024);
-//     int recvCount = sock.recv(buf, 1024);
-//     std::cout << "recv " << recvCount << " bytes" << std::endl;
-//     std::string recvStr(buf, recvCount);
-// 
-//     HttpResponseParser parser;
-//     parser.parse(recvStr);
-//     cout << "parse success"<< endl;
-// 
-//    cout << "output response: " << parser.out() << endl;
-//    return 0;
-//}
-
-
-
 int main(int argc, char** argv) {
-    InetAddress addr("127.0.0.1", 8714);
-    Client client;
-    Connection* conn = client.connect(addr);
+    std::string version = "HTTP/1.1";
+    std::string ae = "gzip";
+    std::string url = "/";
+    std::string ip = "127.0.0.1";
+    std::string port = "80";
+    std::string host = "localhost";
+    int c;
+    while((c = getopt(argc, argv, "v:u:a:h:p:i:")) != -1) {
+        switch(c) {
+            case 'v':
+                if (std::string(optarg) == "0")
+                    version = "HTTP/1.0";
+                break;
+            case 'u':
+                url = optarg;
+                break;
+            case 'a':
+                ae = optarg;
+                break;
+            case 'h':
+                host = optarg;
+                break;
+            case 'i':
+                ip = optarg;
+                break;
+            case 'p':
+                port = optarg;
+                break;
+            default:
+                std::cerr << "parse options failed" << std::endl;
+                return -1;
+        }
+    }
 
-    HttpResponseParser parser;
-    boost::function< int (Buffer&) > readfunc = boost::bind(&HttpResponseParser::readData, &parser, _1);
-    boost::function< int () > connfunc = boost::bind(&HttpResponseParser::conn, &parser);
-
-    conn->setReadCallback(readfunc);
-    conn->setConnCallback(connfunc);
-    client.start();
+    InetAddress addr(ip, atoi(port.c_str()));    
+    Socket sock(true);
+    sock.connect(addr);
 
     HttpRequest req;
-    if (argc > 1) {
-        req.setUrl(argv[1]);
-    }
-    req.setHeader("host", "localhost");
+    req.setUrl(url);
+    req.setVersion(version);
+    req.setHeader("host", host);
+    req.setHeader("Accept-Encoding", ae);
 
-    conn->send(req.toString());
-    parser.wait();
+    string reqLine = req.toString();
+    sock.send(reqLine.c_str(), reqLine.size());
+    sock.setNonblocking();
+    char buf[1024];
+    memset(buf, 0, 1024);
+    std::string recvStr;
+    int recvCount = 0;
+    HttpResponseParser parser;
+    do {
+        recvCount = sock.recv(buf, 1024);
+        if (recvCount <= 0 && errno == EAGAIN) {
+            continue;
+        }
 
-    cout << "output response: " << parser.out() << endl;
+        if (recvCount <= 0) {
+            std::cout << " errno: " << errno << std::endl;
+            break;
+        }
+
+        std::string tmp(buf, recvCount);
+        if (parser.parse(tmp) == DONE) {
+            break;
+        }
+    } while (1);
+
+    parser.dump();
     return 0;
 }
+
+
+
+// int main(int argc, char** argv) {
+//     std::string version = "HTTP/1.1";
+//     std::string ae = "gzip";
+//     std::string url = "/";
+//     std::string host = "localhost";
+//     int c;
+//     while((c = getopt(argc, argv, "v:u:a:h")) != -1) {
+//         switch(c) {
+//             case 'v':
+//                 if (std::string(optarg) == "0")
+//                     version = "HTTP/1.0";
+//                 break;
+//             case 'u':
+//                 url = optarg;
+//                 break;
+//             case 'a':
+//                 ae = optarg;
+//                 break;
+//             case 'h':
+//                 host = optarg;
+//                 break;
+//             default:
+//                 std::cerr << "parse options failed" << std::endl;
+//                 return -1;
+//         }
+//     }
+// 
+//     InetAddress addr("127.0.0.1", 8714);
+//     Client client;
+//     Connection* conn = client.connect(addr);
+// 
+//     HttpResponseParser parser;
+//     boost::function< int (Buffer&) > readfunc = boost::bind(&HttpResponseParser::readData, &parser, _1);
+//     boost::function< int () > connfunc = boost::bind(&HttpResponseParser::conn, &parser);
+// 
+//     conn->setReadCallback(readfunc);
+//     conn->setConnCallback(connfunc);
+//     client.start();
+// 
+//     HttpRequest req;
+//     req.setUrl(url);
+//     req.setVersion(version);
+//     req.setHeader("host", host);
+//     req.setHeader("Accept-Encoding", ae);
+// 
+//     conn->send(req.toString());
+//     parser.wait();
+// 
+// //    cout << "output response: " << parser.out() << endl;
+//     parser.dump();
+//     return 0;
+// }
 
