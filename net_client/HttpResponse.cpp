@@ -39,10 +39,6 @@ std::string decode(const char* data, size_t size)
 
     strm.avail_in = size;
     strm.next_in = (unsigned char*)data;
-    FILE* fp = fopen("zdata","w");
-
-    fwrite(strm.next_in, 1, strm.avail_in, fp);
-
     do {
         strm.avail_out = size;
         strm.next_out = out;
@@ -64,39 +60,48 @@ std::string decode(const char* data, size_t size)
         have = size- strm.avail_out;
         res.append((const char*)out, have);
     } while (ret != Z_STREAM_END);
-    fclose(fp);
     (void)inflateEnd(&strm);
     delete[] out;
     return res;
 }
 
+std::string judgeHeader(char* header, int size) {
+    if (header[0] == 0x00 && header[1] == 0x01 && header[2] == 0x02) {
+        header[0] = (char)0x1f;
+        header[1] = (char)0x8b;
+        header[2] = (char)0x08;
+        return "gz2";
+    } else if (header[0] == (char)0x1f && header[1] == (char)0x8b && header[2] == (char)0x08) {
+        return "gzip";
+    } else {
+        return "text";
+    }
+}
+
+void HttpResponse::dealBody(const std::string& chunk) {
+    char* header = const_cast<char*>(chunk.c_str());
+    assert(header != NULL);
+    std::string ret = judgeHeader(header, chunk.size());
+    if (ret == "gzip" || ret == "gz2") {
+        std::string gztxt = decode(header, chunk.size());
+        mStr.append("\na " + ret + " chunk: \n").append(gztxt);
+    } else {
+        mStr.append("\na " + ret + " chunk: \n").append(chunk);
+    }
+}
 
 const std::string& HttpResponse::toString() {
     mStr.append(mVersion).append(" ").append(mState).append(" ").append(mDesc).append("\n");
     for (MapIter iter = mHeaders.begin(); iter != mHeaders.end(); ++iter) {
         mStr.append(iter->first).append(" ==> ").append(iter->second).append("\n");
     }
-    for (int i=0; i<mChunks.size(); ++i) {
-        char* buf = const_cast<char*>(mChunks[i].c_str());
-        assert(buf != NULL);
-
-        if (buf[0] == 0x00 && buf[1] == 0x01 && buf[2] == 0x02) {
-            mStr.append("a gz2 body: \n");
-            buf[0] = (char)0x1f;
-            buf[1] = (char)0x8b;
-            buf[2] = (char)0x08;
-            std::string gztxt = decode(buf, mChunks[i].size());
-            mStr.append(gztxt);
-        } else if (buf[0] == (char)0x1f && buf[1] == (char)0x8b && buf[2] == (char)0x08) {
-            mStr.append("a gzip body: \n");
-            std::string gztxt = decode(buf, mChunks[i].size());
-            mStr.append(gztxt);
-        } else {
-            mStr.append("text body:");
-            mStr.append(buf);
+    if (mChunked) {
+        for (int i=0; i<mChunks.size(); ++i) {
+            dealBody(mChunks[i]);
         }
+    } else { // not chunk
+        dealBody(mBody);
     }
-
     return mStr;
 }
 

@@ -28,6 +28,7 @@ public:
     }
 
     const std::string& toString();
+    void dealBody(const std::string& chunk);
     void setVersion(const std::string&);
     void setState(const std::string&);
     void setDesc(const std::string&);
