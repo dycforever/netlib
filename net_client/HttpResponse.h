@@ -16,6 +16,7 @@ private:
     std::string mBody;
 
     bool mChunked;
+    bool mGzip;
     std::string mStr;
 
     //TODO use pointer instead
@@ -26,10 +27,12 @@ private:
     ParseRet parseChunk(std::string& b);
     typedef std::map<std::string, std::string>::iterator MapIter;
 public:
-    HttpResponse():mBody(""), mChunked(false),
+    HttpResponse():mBody(""), mChunked(false), mGzip(false), 
                    mState(""), mDesc(""), mVersion("") {
        mStr.reserve(512);
     }
+
+    std::string judgeHeader(char* header, int size);
 
     size_t isChunked();
     std::string getContentType() {return mHeaders["content-type"];}

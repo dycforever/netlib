@@ -66,7 +66,7 @@ public:
         size_t start = 0;
         ParseRet ret;
         mResponse.append(resp);
-//        cout << "at first:" << mResponse << endl;
+        cout << "at first:" << mResponse.size() << endl;
         if (mPhase == LINE) {
             // TODO if too long, return error
             start = getToken(mResponse, start, token, "\r\n");
@@ -81,11 +81,11 @@ public:
             }
         }
 
-//        cout << "after parse header:" << mResponse << endl;
+        cout << "after parse header:" << mResponse.size() << endl;
         while(mPhase == HEADER) {
             size_t ostart = start;
             start = getToken(mResponse, start, token, "\r\n");
-//            cout << "header line: " << token << endl;
+            cout << "header line: " << token << endl;
             if (token == "") {
                 mResponse = mResponse.substr(start, mResponse.size()-start);
                 mPhase = BODY;
@@ -113,7 +113,7 @@ public:
     int readData(Buffer& buffer) {
         size_t size = buffer.readableSize();
         char* buf = buffer.get(size);
-//        std::cout << "read " << size << " bytes data" << std::endl;
+        std::cout << "read " << size << " bytes data" << std::endl;
         std::string resp(buf, size);
         if (parse(resp) == DONE) {
             mCond.notify();
@@ -122,6 +122,7 @@ public:
     }
 
     int conn() {
+        std::cout << "conn build" << std::endl;
     }
 
     std::string out() {
@@ -138,7 +139,7 @@ public:
 
     void dump() {
         std::cout << "chunk: " << mResp.isChunked() << std::endl
-                << "content-type: " << mResp.getContentEncoding() << std::endl
+                << "content-encoding: " << mResp.getContentEncoding() << std::endl
                 << mResp.bodyToString() << std::endl;
     }
 
@@ -203,7 +204,89 @@ private:
     Epoller* mEpoller;
 };
 
+// int main(int argc, char** argv) {
+//#ifdef SHENMA
+//    alog::Configurator::configureLogger("./logger.conf");
+//#endif
+//     std::string version = "HTTP/1.1";
+//     std::string ae = "gzip";
+//     std::string url = "/";
+//     std::string ip = "127.0.0.1";
+//     std::string port = "80";
+//     std::string host = "localhost";
+//     int c;
+//     while((c = getopt(argc, argv, "v:u:a:h:p:i:")) != -1) {
+//         switch(c) {
+//             case 'v':
+//                 if (std::string(optarg) == "0")
+//                     version = "HTTP/1.0";
+//                 break;
+//             case 'u':
+//                 url = optarg;
+//                 break;
+//             case 'a':
+//                 ae = optarg;
+//                 break;
+//             case 'h':
+//                 host = optarg;
+//                 break;
+//             case 'i':
+//                 ip = optarg;
+//                 break;
+//             case 'p':
+//                 port = optarg;
+//                 break;
+//             default:
+//                 std::cerr << "parse options failed" << std::endl;
+//                 return -1;
+//         }
+//     }
+// 
+//     InetAddress addr(ip, atoi(port.c_str()));    
+//     Socket sock(true);
+//     sock.connect(addr);
+// 
+//     HttpRequest req;
+//     req.setUrl(url);
+//     req.setVersion(version);
+//     req.setHeader("host", host);
+//     req.setHeader("Accept-Encoding", ae);
+// 
+//     string reqLine = req.toString();
+//     sock.send(reqLine.c_str(), reqLine.size());
+//     sock.setNonblocking();
+//     char buf[1024];
+//     memset(buf, 0, 1024);
+//     std::string recvStr;
+//     int recvCount = 0;
+//     HttpResponseParser parser;
+//     do {
+//         recvCount = sock.recv(buf, 1024);
+//         if (recvCount <= 0 && errno == EAGAIN) {
+//             continue;
+//         }
+// 
+//         if (recvCount <= 0) {
+//             std::cout << " errno: " << errno << std::endl;
+//             break;
+//         }
+// 
+//         std::string tmp(buf, recvCount);
+//         if (parser.parse(tmp) == DONE) {
+//             break;
+//         }
+//     } while (1);
+// 
+//     parser.dump();
+//     return 0;
+// }
+
+
+
 int main(int argc, char** argv) {
+#ifdef SHENMA
+    alog::Configurator::configureLogger("./logger.conf");
+#endif
     std::string version = "HTTP/1.1";
     std::string ae = "gzip";
     std::string url = "/";
@@ -239,8 +322,18 @@ int main(int argc, char** argv) {
     }
 
     InetAddress addr(ip, atoi(port.c_str()));    
-    Socket sock(true);
-    sock.connect(addr);
+    Client client;
+    std::cout << "main connect" << std::endl;
+    Connection* conn = client.connect(addr);
+    assert(conn != NULL);
+
+    HttpResponseParser parser;
+    boost::function< int (Buffer&) > readfunc = boost::bind(&HttpResponseParser::readData, &parser, _1);
+    boost::function< int () > connfunc = boost::bind(&HttpResponseParser::conn, &parser);
+
+    conn->setReadCallback(readfunc);
+    conn->setConnCallback(connfunc);
+    client.start();
 
     HttpRequest req;
     req.setUrl(url);
@@ -248,87 +341,11 @@ int main(int argc, char** argv) {
     req.setHeader("host", host);
     req.setHeader("Accept-Encoding", ae);
 
-    string reqLine = req.toString();
-    sock.send(reqLine.c_str(), reqLine.size());
-    sock.setNonblocking();
-    char buf[1024];
-    memset(buf, 0, 1024);
-    std::string recvStr;
-    int recvCount = 0;
-    HttpResponseParser parser;
-    do {
-        recvCount = sock.recv(buf, 1024);
-        if (recvCount <= 0 && errno == EAGAIN) {
-            continue;
-        }
+    conn->send(req.toString());
+    parser.wait();
 
-        if (recvCount <= 0) {
-            std::cout << " errno: " << errno << std::endl;
-            break;
-        }
-
-        std::string tmp(buf, recvCount);
-        if (parser.parse(tmp) == DONE) {
-            break;
-        }
-    } while (1);
-
+//    cout << "output response: " << parser.out() << endl;
     parser.dump();
     return 0;
 }
-
-
-
-// int main(int argc, char** argv) {
-//     std::string version = "HTTP/1.1";
-//     std::string ae = "gzip";
-//     std::string url = "/";
-//     std::string host = "localhost";
-//     int c;
-//     while((c = getopt(argc, argv, "v:u:a:h")) != -1) {
-//         switch(c) {
-//             case 'v':
-//                 if (std::string(optarg) == "0")
-//                     version = "HTTP/1.0";
-//                 break;
-//             case 'u':
-//                 url = optarg;
-//                 break;
-//             case 'a':
-//                 ae = optarg;
-//                 break;
-//             case 'h':
-//                 host = optarg;
-//                 break;
-//             default:
-//                 std::cerr << "parse options failed" << std::endl;
-//                 return -1;
-//         }
-//     }
-// 
-//     InetAddress addr("127.0.0.1", 8714);
-//     Client client;
-//     Connection* conn = client.connect(addr);
-// 
-//     HttpResponseParser parser;
-//     boost::function< int (Buffer&) > readfunc = boost::bind(&HttpResponseParser::readData, &parser, _1);
-//     boost::function< int () > connfunc = boost::bind(&HttpResponseParser::conn, &parser);
-// 
-//     conn->setReadCallback(readfunc);
-//     conn->setConnCallback(connfunc);
-//     client.start();
-// 
-//     HttpRequest req;
-//     req.setUrl(url);
-//     req.setVersion(version);
-//     req.setHeader("host", host);
-//     req.setHeader("Accept-Encoding", ae);
-// 
-//     conn->send(req.toString());
-//     parser.wait();
-// 
-// //    cout << "output response: " << parser.out() << endl;
-//     parser.dump();
-//     return 0;
-// }
 

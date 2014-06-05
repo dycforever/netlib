@@ -36,6 +36,20 @@ int Socket::getopt(int level, int optname, void* optval, void* len) {
     return ret;
 }
 
+bool Socket::checkConnected() {
+    int sret = 0;
+    int sretlen;
+    int ret = getopt(SOL_SOCKET, SO_ERROR, (void*)&sret, &sretlen);
+    if(ret == -1)  {  
+        FATAL("%s:%d, connection failed with errno: %d %s", __FILE__, __LINE__, errno, strerror(errno));  
+        return false;  
+    } else if(sret) {  
+        FATAL("%s:%d, connection failed with errno: %d %s", __FILE__, __LINE__, errno, strerror(errno));  
+        return false;  
+    }
+    return true;
+}
+
 int Socket::setopt(int level, int optname, void* optval, socklen_t len) {
     int ret = ::setsockopt(mSockfd, level, optname, optval, len);
     if (ret < 0) {

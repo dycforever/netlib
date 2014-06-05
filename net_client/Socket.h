@@ -61,6 +61,8 @@ public:
     int recv(char* buf, size_t len);
 
 
+    bool checkConnected();
+
     int getopt(int level, int optname, void* optval, void* len);
     int setopt(int level, int optname, void* optval, socklen_t len);
 

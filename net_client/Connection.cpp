@@ -114,15 +114,20 @@ int Connection::handle(const epoll_event& event) {
     } else if (event.events & EPOLLOUT) {
         if (!mConnected) {
             DEBUG("handle conn event");
-            // TODO check connected
-            mConnected = true;
-            mConnCallback();
+
+            if (mSocket->checkConnected()) {
+                mConnected = true;
+                mConnCallback();
+            } else {
+                mConnected = false;
+                ret = CONN_REMOVE;
+            }
         } else {
             DEBUG("handle write event");
             ret = writeSocket();
         }
     } else {
-        NOTICE("unknow event");
+        INFO("unknow event");
     }
     return ret;
 }

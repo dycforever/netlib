@@ -6,6 +6,26 @@
 #include <iostream> 
 #include <stdio.h> 
 
+
+#ifdef SHENMA
+
+#include <alog/Configurator.h>
+#include <alog/Logger.h>
+
+namespace dyc {
+
+#define INFO(format, args...) ALOG_LOG(gLogger, alog::LOG_LEVEL_INFO, format, ##args)
+#define WARN(format, args...) ALOG_LOG(gLogger, alog::LOG_LEVEL_WARN, format, ##args)
+#define FATAL(format, args...) ALOG_LOG(gLogger, alog::LOG_LEVEL_FATAL, format, ##args)
+#define DEBUG(format, args...) ALOG_LOG(gLogger, alog::LOG_LEVEL_DEBUG, format, ##args)
+
+alog::Logger* gLogger = alog::Logger::getLogger("logtest");
+
+}
+
+#else // not at SHENMA
+
+
 enum COLOR{BLACK=0,RED=1,GREEN=2,YELLOW=3,BLUE=4,WHITE=9};
 enum Format{BOLD=1,NORMAL,UNDERSCORE=4,REVERSE=7,DELETE=9};
 inline void PRINT_COLOR(COLOR foreground,COLOR background=BLACK,Format format=BOLD){
@@ -66,6 +86,8 @@ inline void UNPRINT_COLOR(){
         fflush(LOGOUT);\
     } while(0)
 
+
+#endif // SHENMA
 
 
 #endif  // NETLIB_LOG_H

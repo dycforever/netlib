@@ -65,13 +65,15 @@ std::string decode(const char* data, size_t size)
     return res;
 }
 
-std::string judgeHeader(char* header, int size) {
+std::string HttpResponse::judgeHeader(char* header, int size) {
     if (header[0] == 0x00 && header[1] == 0x01 && header[2] == 0x02) {
         header[0] = (char)0x1f;
         header[1] = (char)0x8b;
         header[2] = (char)0x08;
+        mGzip = true;
         return "gz2";
     } else if (header[0] == (char)0x1f && header[1] == (char)0x8b && header[2] == (char)0x08) {
+        mGzip = true;
         return "gzip";
     } else {
         return "text";
@@ -109,8 +111,13 @@ std::string HttpResponse::bodyToString() {
             // FIXME
 //            dealChunk(mChunks[i], ret, retStr);
         }
-        std::string gztxt = decode(totalChunk.c_str(), totalChunk.size());
-        retStr.append("\n" + ret + " content: \n").append(gztxt);
+        std::string txt;
+        if (mGzip) {
+            txt = decode(totalChunk.c_str(), totalChunk.size());
+            retStr.append("\n" + ret + " content: \n").append(txt);
+        } else {
+            retStr.append("\n" + ret + " content: \n").append(totalChunk);
+        }
     } else { // not chunk
         char* header = const_cast<char*>(mBody.c_str());
         std::string ret = judgeHeader(header, mBody.size());
@@ -196,7 +203,7 @@ ParseRet HttpResponse::parseChunk(std::string& b) {
         size_t ostart = start;
         start = getToken(b, start, token, "\r\n");
         if (start == std::string::npos) {
-//            std::cout << "not enough chunk size" << std::endl;
+            std::cout << "not enough chunk size" << std::endl;
             b = b.substr(ostart, b.size()-ostart);
             break;
         }
@@ -206,7 +213,7 @@ ParseRet HttpResponse::parseChunk(std::string& b) {
         }
         std::string chunkSizeStr(token.c_str(), chunkExt);
         int size = strtosize(chunkSizeStr);
-//        std::cout << "get a chunk Size: " << size << std::endl;
+        std::cout << "get a chunk Size: " << size << std::endl;
         if (size == 0) {
             ret = DONE;
             break;
@@ -231,7 +238,7 @@ ParseRet HttpResponse::parseChunk(std::string& b) {
 }
 
 ParseRet HttpResponse::setBody(std::string& b) {
-//    std::cout << "body size:" << b.size() << std::endl;
+    std::cout << "body size:" << b.size() << std::endl;
     ParseRet ret = DONE;
     mBody = b;
     if (mChunked) {
