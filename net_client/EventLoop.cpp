@@ -48,7 +48,7 @@ void EventLoop::loop()
       ++iteration_;
   
       int nfds = _poller->poll(_active_events);
-      NOTICE("eventloop detect %d events", nfds);
+      DEBUG("eventloop detect %d events", nfds);
       if (nfds < 0) {
           FATAL("poll failed: %d", nfds);
           return;
@@ -57,13 +57,8 @@ void EventLoop::loop()
       eventHandling_ = true;
       for(int i = 0; i < nfds; ++i) {
           Connection* connection = (Connection*)_active_events[i].data.ptr;
-//          int fd = connection->fd();
-//          if (connection == NULL) {
-//              FATAL("find connection for fd[%d] failed", fd);
-//          }
-//          NOTICE("handle event in connection[%d]", fd);
+          assert(connection != NULL);
           int ret = connection->handle(_active_events[i]);
-          // TODO need use macro
           if (ret == Connection::CONN_REMOVE) {
               DEBUG("will remove conn");
               _poller->removeEvent(connection);

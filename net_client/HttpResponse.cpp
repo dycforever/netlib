@@ -47,12 +47,12 @@ std::string decode(const char* data, size_t size)
         assert(ret != Z_STREAM_ERROR);  /* state not clobbered */
         switch (ret) {
             case Z_NEED_DICT:
-                std::cout << "inflate return Z_NEED_DICT" << std::endl;
+                FATAL("inflate return Z_NEED_DICT");
                 ret = Z_DATA_ERROR;     /* and fall through */
             case Z_DATA_ERROR:
-                std::cout << "inflate return Z_DATA_ERROR" << std::endl;
+                FATAL("inflate return Z_DATA_ERROR" );
             case Z_MEM_ERROR:
-                std::cout << "inflate return Z_MEM_ERROR" << std::endl;
+                FATAL("inflate return Z_MEM_ERROR");
                 (void)inflateEnd(&strm);
                 FATAL("inflate failed");
                 return "";
@@ -61,6 +61,7 @@ std::string decode(const char* data, size_t size)
         res.append((const char*)out, have);
     } while (ret != Z_STREAM_END && strm.avail_in != 0);
     (void)inflateEnd(&strm);
+    INFO("decode %lu bytes", size);
     delete[] out;
     return res;
 }
@@ -93,9 +94,9 @@ void HttpResponse::dealChunk(const std::string& chunk, const std::string& ret, s
     assert(header != NULL);
     if (ret == "gzip" || ret == "gz2") {
         std::string gztxt = decode(header, chunk.size());
-        str.append("\n" + ret + " content: \n").append(gztxt);
+        str.append("\n" + ret + " content: \n");// .append(gztxt);
     } else {
-        str.append("\n" + ret + " content: \n").append(chunk);
+        str.append("\n" + ret + " content: \n");// .append(chunk);
     }
 }
 
@@ -114,9 +115,9 @@ std::string HttpResponse::bodyToString() {
         std::string txt;
         if (mGzip) {
             txt = decode(totalChunk.c_str(), totalChunk.size());
-            retStr.append("\n" + ret + " content: \n").append(txt);
+            retStr.append("\n" + ret + " content: \n");// .append(txt);
         } else {
-            retStr.append("\n" + ret + " content: \n").append(totalChunk);
+            retStr.append("\n" + ret + " content: \n");// .append(totalChunk);
         }
     } else { // not chunk
         char* header = const_cast<char*>(mBody.c_str());
@@ -203,7 +204,7 @@ ParseRet HttpResponse::parseChunk(std::string& b) {
         size_t ostart = start;
         start = getToken(b, start, token, "\r\n");
         if (start == std::string::npos) {
-            std::cout << "not enough chunk size" << std::endl;
+//            WARN("not enough chunk size");
             b = b.substr(ostart, b.size()-ostart);
             break;
         }
@@ -213,7 +214,7 @@ ParseRet HttpResponse::parseChunk(std::string& b) {
         }
         std::string chunkSizeStr(token.c_str(), chunkExt);
         int size = strtosize(chunkSizeStr);
-        std::cout << "get a chunk Size: " << size << std::endl;
+        DEBUG("get a chunk Size: %lu", size);
         if (size == 0) {
             ret = DONE;
             break;
@@ -226,7 +227,7 @@ ParseRet HttpResponse::parseChunk(std::string& b) {
         }
         size_t chunkSize = size;
         if (b.begin()+start+chunkSize >= b.end()) {
-            std::cout << "not enough chunk" << std::endl;
+//            WARN("not enough chunk");
             b = b.substr(ostart, b.size()-ostart);
             break;
         }
@@ -238,7 +239,7 @@ ParseRet HttpResponse::parseChunk(std::string& b) {
 }
 
 ParseRet HttpResponse::setBody(std::string& b) {
-    std::cout << "body size:" << b.size() << std::endl;
+    DEBUG("body size: %lu", b.size() );
     ParseRet ret = DONE;
     mBody = b;
     if (mChunked) {

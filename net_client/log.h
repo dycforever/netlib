@@ -12,16 +12,12 @@
 #include <alog/Configurator.h>
 #include <alog/Logger.h>
 
-namespace dyc {
-
 #define INFO(format, args...) ALOG_LOG(gLogger, alog::LOG_LEVEL_INFO, format, ##args)
 #define WARN(format, args...) ALOG_LOG(gLogger, alog::LOG_LEVEL_WARN, format, ##args)
 #define FATAL(format, args...) ALOG_LOG(gLogger, alog::LOG_LEVEL_FATAL, format, ##args)
 #define DEBUG(format, args...) ALOG_LOG(gLogger, alog::LOG_LEVEL_DEBUG, format, ##args)
 
-alog::Logger* gLogger = alog::Logger::getLogger("logtest");
-
-}
+extern alog::Logger* gLogger;
 
 #else // not at SHENMA
 

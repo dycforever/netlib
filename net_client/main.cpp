@@ -7,6 +7,7 @@
 #include "Condition.h"
 #include "HttpRequest.h"
 #include "HttpResponse.h"
+
 #include <boost/bind.hpp>
 
 #include <fstream>
@@ -66,26 +67,30 @@ public:
         size_t start = 0;
         ParseRet ret;
         mResponse.append(resp);
-        cout << "at first:" << mResponse.size() << endl;
+        DEBUG("at first: %lu", mResponse.size());
         if (mPhase == LINE) {
             // TODO if too long, return error
             start = getToken(mResponse, start, token, "\r\n");
+            if (start == std::string::npos) {
+//                INFO("read response line return WATI");
+                return WAIT;
+            }
             ret = parseRespLine(token);
             if (ret == DONE) {
                 mPhase = HEADER;
                 mResponse = mResponse.substr(start, mResponse.size()-start);
                 start = 0;
             } else {
-                cout << "return WATI" << endl;
+//                INFO("parse response line return WATI");
                 return WAIT;
             }
         }
 
-        cout << "after parse header:" << mResponse.size() << endl;
+        DEBUG("after parse header: %lu", mResponse.size());
         while(mPhase == HEADER) {
             size_t ostart = start;
             start = getToken(mResponse, start, token, "\r\n");
-            cout << "header line: " << token << endl;
+            DEBUG("header line: %s", token.c_str());
             if (token == "") {
                 mResponse = mResponse.substr(start, mResponse.size()-start);
                 mPhase = BODY;
@@ -95,7 +100,7 @@ public:
             ret = parseRespHeader(token);
             if (ret != DONE) {
                 mResponse = mResponse.substr(ostart, mResponse.size()-ostart);
-                cout << "return WATI2" << endl;
+                INFO("return WATI2");
                 return WAIT;
             }
         }
@@ -113,7 +118,7 @@ public:
     int readData(Buffer& buffer) {
         size_t size = buffer.readableSize();
         char* buf = buffer.get(size);
-        std::cout << "read " << size << " bytes data" << std::endl;
+        DEBUG("read %lu bytes data", size);
         std::string resp(buf, size);
         if (parse(resp) == DONE) {
             mCond.notify();
@@ -122,7 +127,7 @@ public:
     }
 
     int conn() {
-        std::cout << "conn build" << std::endl;
+//        std::cout << "conn build" << std::endl;
     }
 
     std::string out() {
@@ -282,6 +287,9 @@ private:
 // }
 
 
+#ifdef SHENMA
+alog::Logger* gLogger = alog::Logger::getLogger("httpc");
+#endif
 
 int main(int argc, char** argv) {
 #ifdef SHENMA
@@ -323,7 +331,7 @@ int main(int argc, char** argv) {
 
     InetAddress addr(ip, atoi(port.c_str()));    
     Client client;
-    std::cout << "main connect" << std::endl;
+//    INFO("main connect");
     Connection* conn = client.connect(addr);
     assert(conn != NULL);
 

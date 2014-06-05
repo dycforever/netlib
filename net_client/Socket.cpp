@@ -20,7 +20,7 @@ ssize_t Socket::recvmsg(struct msghdr *msg, int flags) {
 Socket::~Socket()
 {
     if (close(mSockfd) == 0) {
-        NOTICE("close %d success", mSockfd);
+        INFO("close %d success", mSockfd);
     } else {
         FATAL("close %d failed: %d %s", mSockfd, errno, strerror(errno));
     }
@@ -80,7 +80,7 @@ int Socket::bind(const InetAddress& addr)
         return ret;
     }
     setReuseAddr(true);
-    NOTICE("bind with socket[%d] raw_ip[%s] port[%u]", 
+    INFO("bind with socket[%d] raw_ip[%s] port[%u]", 
            mSockfd, inet_ntoa(sockAddr.sin_addr), ntohs(sockAddr.sin_port));
     return 0;
 }
@@ -186,7 +186,7 @@ write_again:
         case EAGAIN:
             break;
         default:
-            NOTICE("write return %d with errno[%d], this socket is disconnected", count, errno);
+            FATAL("write return %d with errno[%d][%s], this socket is disconnected", count, errno, strerror(errno));
     };
     return count;
 }
@@ -206,7 +206,7 @@ read_again:
         case EAGAIN:
             break;
         default:
-            NOTICE("read return %d with errno[%d], this socket is disconnected", count, errno);
+            FATAL("read return %d with errno[%d][%s], this socket is disconnected", count, errno, strerror(errno));
     };
     return count;
 }

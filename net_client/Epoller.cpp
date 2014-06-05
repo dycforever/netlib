@@ -53,7 +53,7 @@ int Epoller::createEpoll() {
     if (sock < 0) {
         return sock;
     }
-    NOTICE("create epoll socket[%d]", sock);
+    DEBUG("create epoll socket[%d]", sock);
     _epoll_socket = sock;
 
     return 0;
@@ -62,7 +62,7 @@ int Epoller::createEpoll() {
 int Epoller::_removeEvent(ConnectionPtr socket) {
     int sockfd = socket->fd();
     int epsfd = _epoll_socket;
-    NOTICE("del port in epoll %d", epsfd);
+    DEBUG("del port in epoll %d", epsfd);
     int ret = epoll_ctl(_epoll_socket, EPOLL_CTL_DEL, sockfd, NULL);
     if( ret < 0 ){
         FATAL("remove socket:%d from epoll fd:%d failed", sockfd, epsfd);
@@ -81,7 +81,7 @@ int Epoller::_addEvent(ConnectionPtr socket, uint32_t op_types) {
 
     int epsfd = _epoll_socket;
     const char* ev = (op_types==EPOLLIN) ? "epoll_in" : "epoll_out";
-    NOTICE("add [%d][%s] event in epoll socket[%d]", sockfd, ev, epsfd);
+    DEBUG("add [%d][%s] event in epoll socket[%d]", sockfd, ev, epsfd);
     int ret = epoll_ctl(_epoll_socket, EPOLL_CTL_ADD, sockfd, &event);
     if( ret < 0 ){
         FATAL("add socket:%d into epoll fd:%d failed errno:%d %s", sockfd, epsfd, errno, strerror(errno));
@@ -91,7 +91,7 @@ int Epoller::_addEvent(ConnectionPtr socket, uint32_t op_types) {
 }
 
 int Epoller::poll(Event* list) {
-    NOTICE("epoll wait on socket[%d] size:%d", _epoll_socket, 10);
+    DEBUG("epoll wait on socket[%d] size:%d", _epoll_socket, 10);
     int ret = epoll_wait(_epoll_socket, list, EPOLL_MAX_LISTEN_NUMBER, _timeout);
     if (ret >= 0) {
         return ret;
@@ -101,7 +101,7 @@ int Epoller::poll(Event* list) {
         case EAGAIN:
             return 0;
         default:
-            WARNING("epoll_wait return %d with errno[%d]: %s", ret, errno, strerror(errno));
+            WARN("epoll_wait return %d with errno[%d]: %s", ret, errno, strerror(errno));
             ret = -1;
     };
     return ret;
@@ -113,7 +113,7 @@ int Epoller::updateEvent(ConnectionPtr socket) {
     event.data.ptr = (void*)socket;
     event.events = socket->getEvents();
     // TODO: let getEvent readable
-    NOTICE("socket[%d] update event[%d] in epoll", sockfd, socket->getEvents());
+    DEBUG("socket[%d] update event[%d] in epoll", sockfd, socket->getEvents());
     int ret = epoll_ctl(_epoll_socket, EPOLL_CTL_MOD, sockfd, &event);
     if( ret < 0 ){
         FATAL("ctl socket:%d into epoll fd:%d failed errno:%d %s", sockfd, _epoll_socket, errno, strerror(errno));
