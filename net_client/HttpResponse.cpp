@@ -129,7 +129,7 @@ std::string HttpResponse::bodyToString() {
 
 const std::string& HttpResponse::toString() {
     mStr.clear();
-    mStr.append(mVersion).append(" ").append(mState).append(" ").append(mDesc).append("\n");
+    mStr.append(mVersion).append(" ").append(mStatusCode).append(" ").append(mDesc).append("\n");
     for (MapIter iter = mHeaders.begin(); iter != mHeaders.end(); ++iter) {
         mStr.append(iter->first).append(" ==> ").append(iter->second).append("\n");
     }
@@ -158,7 +158,7 @@ void HttpResponse::setVersion(const std::string& v) {
 }
 
 void HttpResponse::setState(const std::string& s) {
-    mState = s;
+    mStatusCode = s;
 }
 
 void HttpResponse::setDesc(const std::string& d) {

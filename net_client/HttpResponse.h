@@ -9,7 +9,7 @@ class HttpResponse {
 
 private:
     std::map<std::string, std::string> mHeaders;
-    std::string mState;
+    std::string mStatusCode;
     std::string mDesc;
     std::string mVersion;
 
@@ -28,13 +28,14 @@ private:
     typedef std::map<std::string, std::string>::iterator MapIter;
 public:
     HttpResponse():mBody(""), mChunked(false), mGzip(false), 
-                   mState(""), mDesc(""), mVersion("") {
+                   mStatusCode(""), mDesc(""), mVersion("") {
        mStr.reserve(512);
     }
 
     std::string judgeHeader(char* header, int size);
 
     size_t isChunked();
+    std::string getStatusCode() {return mStatusCode;}
     std::string getContentType() {return mHeaders["content-type"];}
     std::string getContentEncoding() {return mHeaders["content-encoding"];}
     std::string bodyToString();

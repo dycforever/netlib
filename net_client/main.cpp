@@ -137,7 +137,8 @@ public:
     void dump(const std::string& filename) {
         ofstream out(filename.c_str());
         out << "chunk: " << mResp.isChunked() << std::endl
-                << "content-type: " << mResp.getContentEncoding() << std::endl
+                << "content-encoding: " << mResp.getContentEncoding() << std::endl
+                << "status code: " << mResp.getStatusCode() << std::endl
                 << mResp.bodyToString() << std::endl;
         out.close();
     }
@@ -145,6 +146,7 @@ public:
     void dump() {
         std::cout << "chunk: " << mResp.isChunked() << std::endl
                 << "content-encoding: " << mResp.getContentEncoding() << std::endl
+                << "status code: " << mResp.getStatusCode() << std::endl
                 << mResp.bodyToString() << std::endl;
     }
 
