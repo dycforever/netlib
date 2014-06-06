@@ -113,6 +113,10 @@ int Connection::handle(const epoll_event& event) {
         if (readCount <= 0) {
             ret = CONN_REMOVE;
             mConnected = false;
+            if (readCount == 0) {
+                mReadBuffer.setFinish();
+                mReadCallback(mReadBuffer);
+            }
         } else {
             ret = CONN_CONTINUE;
             mReadCallback(mReadBuffer);

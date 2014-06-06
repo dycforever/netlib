@@ -151,6 +151,9 @@ void HttpResponse::setHeader(const std::string& k, const std::string& v) {
     if (key == "transfer-encoding" && lv == "chunked") {
         mChunked= true;
     }
+    if (key == "content-length") {
+        mContentLength = atoi(lv.c_str());
+    }
 }
 
 void HttpResponse::setVersion(const std::string& v) {
@@ -245,7 +248,10 @@ ParseRet HttpResponse::setBody(std::string& b) {
     if (mChunked) {
         ret = parseChunk(b);
         mBody = b;
-    } 
+    } else {
+        // TODO content length
+        return WAIT;
+    }
     return ret;
 }
 

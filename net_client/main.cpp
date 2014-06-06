@@ -36,6 +36,15 @@ public:
 
         size_t codeStart = (vEnd + 1);
         if (vEnd != std::string::npos) {
+            if (line.substr(codeStart, 3) != "200") {
+                std::ofstream out("debug.out");
+                out << "line: " << line << std::endl 
+                    << "###############\n" 
+                    << "code start: \n" << codeStart << " vEnd : " << vEnd << std::endl;
+                out.close();
+                
+                assert(line.substr(codeStart, 3) == "200");
+            }
             mResp.setState(line.substr(codeStart, 3));
         } else {
             return WAIT;
@@ -62,7 +71,7 @@ public:
         return WAIT;
     }
 
-    int parse(const std::string& resp) {
+    int parse(std::string resp, bool isFinish) {
         std::string token;
         size_t start = 0;
         ParseRet ret;
@@ -112,7 +121,7 @@ public:
             mResponse = mResponse.substr(start, mResponse.size()-start);
         }
         ret = mResp.setBody(mResponse);
-        if (ret == DONE) {
+        if (ret == DONE || isFinish) {
             mPhase = LINE;
             ++mHasParsed;
             return DONE;
@@ -126,7 +135,12 @@ public:
         char* buf = buffer.get(size);
         DEBUG("read %lu bytes data", size);
         std::string resp(buf, size);
-        if (parse(resp) == DONE) {
+        
+                std::ofstream out("read.out", std::ios::app);
+                out << "a new line: " << resp << std::endl;
+                out.close();
+
+        if (parse(resp, buffer.isFinish()) == DONE) {
             mCond.notify();
         }
         return 0;

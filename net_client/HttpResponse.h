@@ -18,6 +18,7 @@ private:
     bool mChunked;
     bool mGzip;
     std::string mStr;
+    size_t mContentLength;
 
     //TODO use pointer instead
     std::vector<std::string> mChunks;
@@ -27,7 +28,7 @@ private:
     ParseRet parseChunk(std::string& b);
     typedef std::map<std::string, std::string>::iterator MapIter;
 public:
-    HttpResponse():mBody(""), mChunked(false), mGzip(false), 
+    HttpResponse():mBody(""), mChunked(false), mGzip(false), mContentLength(0),
                    mStatusCode(""), mDesc(""), mVersion("") {
        mStr.reserve(512);
     }

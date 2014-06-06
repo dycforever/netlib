@@ -14,7 +14,8 @@
 class Buffer {
 public:
 
-    Buffer(const char* data, size_t size, bool full=false) : mData(const_cast<char*>(data)), mReadPos(0), mSize(size) {
+    Buffer(const char* data, size_t size, bool full=false) : mData(const_cast<char*>(data)), 
+    mReadPos(0), mSize(size), mFinish(false) {
         if (full)
             mWritePos = size;
         else
@@ -59,11 +60,21 @@ public:
         return mData; 
     }
 
+    void setFinish() {
+        mFinish = true;
+    }
+
+    bool isFinish() {
+        return mFinish;
+    }
+
 private:
     char* mData;
     size_t mReadPos;
     size_t mWritePos;
     size_t mSize;
+    // TODO ?
+    bool mFinish;
 
     static const char kCRLF[];
 };
