@@ -83,6 +83,8 @@ private:
     int mEvents;
     Buffer mReadBuffer;
     std::list<BufferPtr> mSendBuffers;
+    size_t mSendInqueue;
+    size_t mSendBySocket;
     
     SpinLock mLock;
     BufferPtr getSendBuffer();

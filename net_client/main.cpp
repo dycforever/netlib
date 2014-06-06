@@ -21,7 +21,7 @@ class HttpResponseParser {
 private:
     enum ParsePhase {LINE, HEADER, BODY};
 public:
-    HttpResponseParser():mResponse(""), mPos(0), mCond(mLock), mPhase(LINE)
+    HttpResponseParser():mResponse(""), mHasRead(0), mHasParsed(0), mCond(mLock), mPhase(LINE)
 {
     mTest = false;
 }
@@ -72,7 +72,7 @@ public:
             // TODO if too long, return error
             start = getToken(mResponse, start, token, "\r\n");
             if (start == std::string::npos) {
-//                INFO("read response line return WATI");
+                DEBUG("read response line return WATI");
                 return WAIT;
             }
             ret = parseRespLine(token);
@@ -90,6 +90,10 @@ public:
         while(mPhase == HEADER) {
             size_t ostart = start;
             start = getToken(mResponse, start, token, "\r\n");
+            if (start == std::string::npos) {
+                DEBUG("read header return WATI");
+                return WAIT;
+            }
             DEBUG("header line: %s", token.c_str());
             if (token == "") {
                 mResponse = mResponse.substr(start, mResponse.size()-start);
@@ -110,6 +114,7 @@ public:
         ret = mResp.setBody(mResponse);
         if (ret == DONE) {
             mPhase = LINE;
+            ++mHasParsed;
             return DONE;
         }
         return WAIT;
@@ -117,6 +122,7 @@ public:
 
     int readData(Buffer& buffer) {
         size_t size = buffer.readableSize();
+        mHasRead += size;
         char* buf = buffer.get(size);
         DEBUG("read %lu bytes data", size);
         std::string resp(buf, size);
@@ -127,7 +133,7 @@ public:
     }
 
     int conn() {
-//        std::cout << "conn build" << std::endl;
+        std::cout << "conn build" << std::endl;
     }
 
     std::string out() {
@@ -157,7 +163,8 @@ public:
 
 private:
     std::string mResponse;
-    int mPos;
+    int mHasParsed;
+    size_t mHasRead;
     dyc::MutexLock mLock;
     dyc::Condition mCond;
     HttpResponse mResp;

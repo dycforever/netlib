@@ -34,10 +34,10 @@ inline void UNPRINT_COLOR(){
 #define LOGOUT stdout
 #ifdef LOG_DEBUG
 
-#define NOTICE(format, arguments...) \
+#define INFO(format, arguments...) \
     do{ \
         PRINT_COLOR(GREEN); \
-        fprintf(LOGOUT," [NOTICE] "); \
+        fprintf(LOGOUT," [INFO] "); \
         UNPRINT_COLOR(); \
         fprintf(LOGOUT,format"\n", ##arguments);\
         fflush(LOGOUT);\
@@ -52,10 +52,10 @@ inline void UNPRINT_COLOR(){
         fflush(LOGOUT);\
     }while(0)
 
-#define WARNING(format, arguments...) \
+#define WARN(format, arguments...) \
     do{ \
         PRINT_COLOR(YELLOW); \
-        fprintf(LOGOUT," [WARNING] "); \
+        fprintf(LOGOUT," [WARN] "); \
         UNPRINT_COLOR(); \
         fprintf(LOGOUT,format"\n", ##arguments);\
         fflush(LOGOUT);\
@@ -64,11 +64,11 @@ inline void UNPRINT_COLOR(){
 
 #else
 
-#define NOTICE(format, arguments...) void();
+#define INFO(format, arguments...) void();
 
 #define DEBUG(format, arguments...) void();
 
-#define WARNING(format, arguments...) void();
+#define WARN(format, arguments...) void();
 
 #endif
 

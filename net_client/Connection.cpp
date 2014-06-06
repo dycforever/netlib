@@ -9,7 +9,7 @@ namespace dyc {
 
 Connection::Connection(SocketPtr socket, EventLoop* loop): 
     mConnected(false), mSocket(socket), _loop(loop), 
-    mReadBuffer(NULL, 0) { 
+    mReadBuffer(NULL, 0), mSendInqueue(0), mSendBySocket(0) { 
         mReadBuffer.makeSpace(1024*1024);
         mWriteCallback = boost::bind(&defaultWriteCallback);
         mReadCallback = boost::bind(&defaultReadCallback, _1);
@@ -18,8 +18,10 @@ Connection::Connection(SocketPtr socket, EventLoop* loop):
 
 void Connection::addBuffer(const char* data, int64_t size) {
     LockGuard<SpinLock> g(mLock);
+    mSendInqueue += size;
     DEBUG("add buffer in send queue");
     mSendBuffers.push_back(NEW Buffer(data, size, true));
+    enableWrite();
 }
 
 void Connection::removeBuffer() {
@@ -31,7 +33,6 @@ void Connection::removeBuffer() {
 
 int Connection::send(const char* data, int64_t size) {
     addBuffer(data, size);
-    enableWrite();
     return 0;
 }
 
@@ -42,7 +43,9 @@ int Connection::send(const std::string& str) {
 
 Connection::BufferPtr Connection::getSendBuffer() {
     LockGuard<SpinLock> g(mLock);
-    if (mSendBuffers.size() == 0) {
+    if (mSendBuffers.size() == 0 ||
+            mSendBuffers.front()->readableSize() == 0) {
+//        disableWrite();
         return NULL;
     }
     return mSendBuffers.front();
@@ -60,8 +63,10 @@ int Connection::readSocket() {
 int Connection::_writeSocket(BufferPtr buffer) {
     int ret = mSocket->send(buffer->beginRead(), buffer->readableSize());
     DEBUG("write %d bytes", ret);
-    if (ret > 0)
+    if (ret > 0) {
+        mSendBySocket += ret;
         buffer->get(ret);
+    }
     return ret;
 }
 
@@ -72,16 +77,17 @@ int Connection::writeSocket() {
     while (true) {
         if (!buffer || buffer->readableSize()==0) {
             ret = CONN_UPDATE;
-            disableWrite();
             break;
         }
         // TODO use writev
         ret = _writeSocket(buffer);
         if (ret < 0) {
             if (errno != EAGAIN) {
+                WARN("send data failed");
                 mConnected = false;
                 ret = CONN_REMOVE;
             } else {
+                DEBUG("send data delay");
                 ret = CONN_UPDATE; 
             }
             break;
