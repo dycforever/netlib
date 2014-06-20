@@ -29,12 +29,6 @@ std::string trim(const std::string& input) {
 
 size_t findStr(const std::string& input, const std::string& delimiter, size_t start) {
     using namespace std;
-//    size_t pos = input.find(delimiter[0], start);
-//    size_t end = pos+delimiter.size();
-//    if (pos != string::npos && input.substr(pos, delimiter.size()) == delimiter) {
-//        return pos;
-//    }
-//    return string::npos;
     string::const_iterator pos = search(input.begin()+start, input.end(), delimiter.begin(), delimiter.end());
     if (pos == input.end())
         return string::npos;

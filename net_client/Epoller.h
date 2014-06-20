@@ -31,7 +31,7 @@ private:
     void lock();
     void unlock();
     int _removeEvent(ConnectionPtr);
-    int _addEvent(ConnectionPtr, uint32_t);
+    int addEvent(ConnectionPtr, uint32_t);
 
     pthread_mutex_t _mutex;
     int _epoll_socket;

@@ -3,6 +3,7 @@ include makefile.cfg
 
 export CPLUS_INCLUDE_PATH=$(COM_LIB_PATH)
 export CC=g++
+export CPPFLAGS=-DDEBUG_LOG
 export CFLAGS= -g -pipe -Wall -fPIC -I./include/ -I$(COM_LIB_PATH) -L$(COM_LIB_PATH)
 VPATH=src
 

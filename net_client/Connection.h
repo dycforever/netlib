@@ -39,9 +39,6 @@ public:
 
     explicit Connection(SocketPtr, EventLoop*);
 
-    int send(const char* data, int64_t size);
-    int send(const std::string&);
-
     int getEvents() { return mEvents;}
     void setEvents(int events) { mEvents = events;}
     int fd() { return mSocket->fd();}
@@ -65,7 +62,7 @@ public:
     int _writeSocket(BufferPtr buffer);
 
     void addBuffer(const char* data, int64_t size);
-    void removeBuffer();
+    void takeBuffer();
 
 private:
     InetAddress localAddr;

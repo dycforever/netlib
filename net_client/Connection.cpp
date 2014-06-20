@@ -24,21 +24,13 @@ void Connection::addBuffer(const char* data, int64_t size) {
     enableWrite();
 }
 
-void Connection::removeBuffer() {
+void Connection::takeBuffer() {
     LockGuard<SpinLock> g(mLock);
     DEBUG("remove buffer in send queue");
     DELETE(mSendBuffers.front());
     mSendBuffers.pop_front();
 }
 
-int Connection::send(const char* data, int64_t size) {
-    addBuffer(data, size);
-    return 0;
-}
-
-int Connection::send(const std::string& str) {
-    return send(str.c_str(), str.size());
-}
 
 
 Connection::BufferPtr Connection::getSendBuffer() {
@@ -53,6 +45,7 @@ Connection::BufferPtr Connection::getSendBuffer() {
 
 
 int Connection::readSocket() {
+    // TODO: if buffer size == 0 ?
     int ret = mSocket->recv(mReadBuffer.beginWrite(), mReadBuffer.writableSize());
     DEBUG("read %d bytes", ret);
     mReadBuffer.hasWriten(ret);
@@ -93,7 +86,8 @@ int Connection::writeSocket() {
             break;
         }
         if (!buffer->readableSize()) {
-            removeBuffer();
+            takeBuffer();
+            // TODO: return msg id
             mWriteCallback();
         }
         buffer = getSendBuffer();
@@ -102,8 +96,6 @@ int Connection::writeSocket() {
     return ret;
 }
 
-// return -1 means the socket can be removed
-// return 1 means the socket need be updated
 int Connection::handle(const epoll_event& event) {
     int ret = CONN_CONTINUE;
     int readCount = 0;
@@ -113,18 +105,18 @@ int Connection::handle(const epoll_event& event) {
         if (readCount <= 0) {
             ret = CONN_REMOVE;
             mConnected = false;
-            if (readCount == 0) {
+//            if (readCount == 0) {
                 mReadBuffer.setFinish();
-                mReadCallback(mReadBuffer);
-            }
+//            }
         } else {
             ret = CONN_CONTINUE;
-            mReadCallback(mReadBuffer);
         }
-    } else if (event.events & EPOLLOUT) {
+        mReadCallback(mReadBuffer);
+    } 
+
+    if (event.events & EPOLLOUT) {
         if (!mConnected) {
             DEBUG("handle conn event");
-
             if (mSocket->checkConnected()) {
                 mConnected = true;
                 mConnCallback();
@@ -132,12 +124,12 @@ int Connection::handle(const epoll_event& event) {
                 mConnected = false;
                 ret = CONN_REMOVE;
             }
-        } else {
-            DEBUG("handle write event");
-            ret = writeSocket();
-        }
+            return ret;
+        } 
+        DEBUG("handle write event");
+        ret = writeSocket();
     } else {
-        INFO("unknow event");
+        WARN("unknow event");
     }
     return ret;
 }

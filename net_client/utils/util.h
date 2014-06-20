@@ -47,8 +47,6 @@ namespace dyc {
 
 typedef struct sockaddr SA;
 
-#define NEW new(std::nothrow)
-
 extern int error;
 
  inline const SA* sockaddr_cast(const struct ::sockaddr_in* addr)

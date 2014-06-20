@@ -14,21 +14,21 @@ void Epoller::setTimeout(int t) {
 
 int Epoller::addRead(ConnectionPtr connection) {
     lock();
-    int ret = _addEvent(connection, EPOLLIN);
+    int ret = addEvent(connection, EPOLLIN);
     unlock();
     return ret;
 }
 
 int Epoller::addWrite(ConnectionPtr connection) {
     lock();
-    int ret = _addEvent(connection, EPOLLOUT);
+    int ret = addEvent(connection, EPOLLOUT);
     unlock();
     return ret;
 }
 
 int Epoller::addRW(ConnectionPtr connection) {
     int ret = 0;
-    ret = _addEvent(connection, EPOLLIN|EPOLLOUT);
+    ret = addEvent(connection, EPOLLIN|EPOLLOUT);
     return ret;
 }
 
@@ -53,45 +53,44 @@ int Epoller::createEpoll() {
     if (sock < 0) {
         return sock;
     }
-    DEBUG("create epoll socket[%d]", sock);
+    DEBUG("create epoll connection[%d]", sock);
     _epoll_socket = sock;
 
     return 0;
 }
 
-int Epoller::_removeEvent(ConnectionPtr socket) {
-    int sockfd = socket->fd();
+int Epoller::_removeEvent(ConnectionPtr connection) {
+    int sockfd = connection->fd();
     int epsfd = _epoll_socket;
     DEBUG("del port in epoll %d", epsfd);
     int ret = epoll_ctl(_epoll_socket, EPOLL_CTL_DEL, sockfd, NULL);
     if( ret < 0 ){
-        FATAL("remove socket:%d from epoll fd:%d failed", sockfd, epsfd);
+        FATAL("remove connection:%d from epoll fd:%d failed", sockfd, epsfd);
         return -1;
     }
     return 0;
 }
 
-int Epoller::_addEvent(ConnectionPtr socket, uint32_t op_types) {
-    int sockfd = socket->fd();
-    socket->setEvents(op_types);
+int Epoller::addEvent(ConnectionPtr connection, uint32_t op_types) {
+    int sockfd = connection->fd();
+    connection->setEvents(op_types);
 
     struct epoll_event event;
-    event.data.ptr = (void*)socket;
+    event.data.ptr = (void*)connection;
     event.events = op_types;
 
     int epsfd = _epoll_socket;
     const char* ev = (op_types==EPOLLIN) ? "epoll_in" : "epoll_out";
-    DEBUG("add [%d][%s] event in epoll socket[%d]", sockfd, ev, epsfd);
+    DEBUG("add [%d][%s] event in epoll connection[%d]", sockfd, ev, epsfd);
     int ret = epoll_ctl(_epoll_socket, EPOLL_CTL_ADD, sockfd, &event);
     if( ret < 0 ){
-        FATAL("add socket:%d into epoll fd:%d failed errno:%d %s", sockfd, epsfd, errno, strerror(errno));
+        FATAL("add connection:%d into epoll fd:%d failed errno:%d %s", sockfd, epsfd, errno, strerror(errno));
         return -1;
     }
     return 0;
 }
 
 int Epoller::poll(Event* list) {
-    DEBUG("epoll wait on socket[%d] size:%d", _epoll_socket, 10);
     int ret = epoll_wait(_epoll_socket, list, EPOLL_MAX_LISTEN_NUMBER, _timeout);
     if (ret >= 0) {
         return ret;
@@ -107,16 +106,16 @@ int Epoller::poll(Event* list) {
     return ret;
 }
 
-int Epoller::updateEvent(ConnectionPtr socket) {
+int Epoller::updateEvent(ConnectionPtr connection) {
     struct epoll_event event;
-    int sockfd = socket->fd();
-    event.data.ptr = (void*)socket;
-    event.events = socket->getEvents();
+    int sockfd = connection->fd();
+    event.data.ptr = (void*)connection;
+    event.events = connection->getEvents();
     // TODO: let getEvent readable
-    DEBUG("socket[%d] update event[%d] in epoll", sockfd, socket->getEvents());
+    DEBUG("connection[%d] update event[%d] in epoll", sockfd, connection->getEvents());
     int ret = epoll_ctl(_epoll_socket, EPOLL_CTL_MOD, sockfd, &event);
     if( ret < 0 ){
-        FATAL("ctl socket:%d into epoll fd:%d failed errno:%d %s", sockfd, _epoll_socket, errno, strerror(errno));
+        FATAL("ctl connection:%d into epoll fd:%d failed errno:%d %s", sockfd, _epoll_socket, errno, strerror(errno));
         return -1;
     }
     return 0;
