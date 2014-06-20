@@ -136,9 +136,9 @@ public:
         DEBUG("read %lu bytes data", size);
         std::string resp(buf, size);
         
-                std::ofstream out("read.out", std::ios::app);
-                out << "a new line: " << resp << std::endl;
-                out.close();
+//                std::ofstream out("read.out", std::ios::app);
+//                out << "a new line: " << resp << std::endl;
+//                out.close();
 
         if (parse(resp, buffer.isFinish()) == DONE) {
             mCond.notify();

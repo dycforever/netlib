@@ -67,7 +67,7 @@ std::string decode(const char* data, size_t size)
 }
 
 std::string HttpResponse::judgeHeader(char* header, int size) {
-    if (header[0] == 0x00 && header[1] == 0x01 && header[2] == 0x02) {
+    if (header[0] == 0x00 && header[1] == 0x01) {
         header[0] = (char)0x1f;
         header[1] = (char)0x8b;
         header[2] = (char)0x08;
