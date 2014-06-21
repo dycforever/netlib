@@ -13,50 +13,56 @@ libsname=[
      'pthread'
 ]
 
-if user == "dingyc":
-    cflags += " -DSHENMA"
-    libsname.append("alog")
-
-# ===========================================
-
-sub = SConscript(['test/SConscript'], variant_dir='build')
-include_dir = ['.', './utils', 
+include_dir = [ '/home/dyc/github/program/netlib/net_client',
+                '/home/dyc/github/program/netlib/net_client/utils',
+                '/home/dyc/github/program/netlib/net_client/tools',
                 '/home/dyc/tools/zlib', 
                 '/home/dyc/tools/log4c/include', 
                 '/home/dyc/github/program/common', 
                 '/home/dyc/github/program/common/thread', 
                 '/home/dyc/github/program/common/utils']
-env = Environment(CPPPATH = include_dir, CCFLAGS = cflags, tools=['default', 'packaging'])
-
-debug = ARGUMENTS.get('debug', 0)
-if int(debug):
-        env.Append(CCFLAGS = '-g -DDEBUG_LOG')
 
 
-netlib_sources = [str(fn) for fn in Glob('*.cpp') if str(fn) not in ['main.cpp']]
 
-netlib_files = netlib_sources.append([str(fn) for fn in Glob('*.h')])
+VariantDir('build', '.')
 
-env.Library(target = 'netlib',
-             source = netlib_sources,
-             dirInPackage = 'lib64')
+SConscript(['./SConscript'], variant_dir='build', exports=['cflags', 'include_dir'], duplicate=0)
+SConscript(['utils/SConscript'], variant_dir='build/utils', exports='include_dir')
+SConscript(['test/SConscript'], variant_dir='build/test', exports='include_dir')
+SConscript(['example/SConscript'], variant_dir='build/example', exports=['cflags', 'include_dir'])
 
 
-# main = env.Program("main", ["main.cpp"], LINKFLAGS="", LIBPATH=['.', '/home/dyc/tools/zlib'], LIBS=libsname)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # installation
 # env.Install("/home/dyc/intall_test/", main)
 # env.Alias("install", "/home/dyc/intall_test/")
 
-runTests = """
-echo "start run test !!!"
-#./test/BufferTest
-#./test/HttpRequestTest
-"""
-
-test = env.Command( target = "test", source = "", action = runTests)
-Depends( test, main )
-env.AlwaysBuild(test)
+# runTests = """
+# echo "start run test !!!"
+# """
+# 
+# test = env.Command( target = "test", source = "", action = runTests)
+# Depends( test, main )
+# env.AlwaysBuild(test)
 
 #ut = Builder(action = 'echo "running unit test" ')
 

@@ -1,3 +1,7 @@
+
+#ifndef __TOKENIZER_H__
+#define __TOKENIZER_H__
+
 #include <vector>
 #include <iostream>
 #include <algorithm>
@@ -12,3 +16,5 @@ size_t findStr(const std::string& input, const std::string& delimiter, size_t st
 void getTokens(const std::string& input, std::vector<std::string>& results, const std::string& delimiter = " ");   
 
 size_t getToken(const std::string& input, size_t start, std::string& token, const std::string& delimiter = " ");
+
+#endif

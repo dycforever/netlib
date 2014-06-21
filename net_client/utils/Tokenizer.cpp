@@ -1,7 +1,7 @@
 #ifndef TOKENIZER_H
 #define TOKENIZER_H
 
-#include <Tokenizer.h>
+#include "Tokenizer.h"
 
 bool isBlankChar(char c) {
     if (c == ' ' 

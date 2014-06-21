@@ -1,0 +1,12 @@
+#!/usr/bin/python
+
+Import("include_dir")
+cflags="-g -std=c++0x"
+
+env = Environment(CPPPATH = include_dir, CCFLAGS = cflags, tools=['default', 'packaging'])
+
+
+utils_sources = [str(fn) for fn in Glob('*.cpp') if str(fn) not in ['main.cpp']]
+
+env.Library(target = 'utils', source = utils_sources, dirInPackage = 'lib64')
+

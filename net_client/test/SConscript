@@ -1,5 +1,7 @@
 #
-env = Environment(CPPPATH = ['..'], CCFLAGS = '-g')
+Import('include_dir')
+
+env = Environment(CPPPATH = [include_dir], CCFLAGS = '-g')
 
 test_sources = [str(fn) for fn in Glob('*.cpp')]
 
@@ -8,8 +10,6 @@ libsname=[
      'pthread'
 ]
 
-#env.Repository('/home/dyc/github/program/netlib/net_client')
-
-for file in test_sources:
-    env.Program(file[0:file.find(".cpp")], [file], LIBPATH=[".."], LIBS=libsname)
+# for file in test_sources:
+#     env.Program(file[0:file.find(".cpp")], [file], LIBPATH=[".."], LIBS=libsname)
 
