@@ -13,14 +13,14 @@
 namespace dyc 
 {
 
-class Connection;
+class Channel;
 class Epoller;
 
 class EventLoop
 {
  public:
     typedef boost::function<void()> DelayFunctor;
-    typedef Connection* ConnectionPtr;
+    typedef Channel* ChannelPtr;
     typedef struct epoll_event Event;
 
 //    EventLoop( boost::shared_ptr<Epoller> );
@@ -36,18 +36,19 @@ class EventLoop
     void queueInLoop(const DelayFunctor& cb);
 
     // internal usage
-    int updateConnection(ConnectionPtr);
-    void removeConnection(ConnectionPtr );
+    int updateChannel(ChannelPtr);
+    void removeChannel(ChannelPtr );
 
     bool inThisThread() {return _threadId == pthread_self();}
+    void assertInLoopThread() {assert(_threadId == pthread_self());}
     static EventLoop* getEventLoopOfCurrentThread();
-    int remove(ConnectionPtr);
+    int remove(ChannelPtr);
 
 private:
     Event* _active_events;
     void callPendingFunctors();
 
-    typedef std::vector<ConnectionPtr> ConnectionList;
+    typedef std::vector<ChannelPtr> ChannelList;
 
     bool looping_; /* atomic */
     bool quit_; /* atomic */

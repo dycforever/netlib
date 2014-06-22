@@ -49,7 +49,7 @@ std::string InetAddress::toIpPort() const
     char host[INET_ADDRSTRLEN] = "INVALID";
     toIp(host, sizeof(host), m_addr);
     uint16_t port = m_addr.sin_port;
-    snprintf(buf, 32, "%s:%u", host, port);
+    snprintf(buf, 32, "%s:%u", host, ntohs(port));
     return buf;
 }
 

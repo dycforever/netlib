@@ -3,13 +3,14 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "Connection.h"
+#include "Channel.h"
+#include "common.h"
 
 namespace dyc {
 
 class Epoller {
 public:
-    typedef Connection* ConnectionPtr;
+    typedef Channel* ChannelPtr;
     typedef struct epoll_event Event;
 
     Epoller();
@@ -17,12 +18,12 @@ public:
     int createEpoll();
     void setTimeout(int);
 
-    int addRead(ConnectionPtr);
-    int addWrite(ConnectionPtr);
-    int addRW(ConnectionPtr);
-    int removeEvent(ConnectionPtr);
+    int addRead(ChannelPtr);
+    int addWrite(ChannelPtr);
+    int addRW(ChannelPtr);
+    int removeEvent(ChannelPtr);
 
-    int updateEvent(ConnectionPtr);
+    int updateEvent(ChannelPtr);
     int poll(Event*);
 
     static const int EPOLL_MAX_LISTEN_NUMBER=500;
@@ -30,8 +31,8 @@ public:
 private:
     void lock();
     void unlock();
-    int _removeEvent(ConnectionPtr);
-    int addEvent(ConnectionPtr, uint32_t);
+    int _removeEvent(ChannelPtr);
+    int addEvent(ChannelPtr, uint32_t);
 
     pthread_mutex_t _mutex;
     int _epoll_socket;

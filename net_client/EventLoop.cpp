@@ -3,7 +3,7 @@
 #include <signal.h>
 
 #include "EventLoop.h"
-#include "Connection.h"
+#include "Channel.h"
 #include "Epoller.h"
 
 
@@ -33,7 +33,7 @@ EventLoop::~EventLoop() {
 
 void EventLoop::loop() {
     assert(!looping_);
-    //    assertInLoopThread();
+    _threadId = pthread_self();
     looping_ = true;
     quit_ = false;
 
@@ -49,13 +49,13 @@ void EventLoop::loop() {
 
         eventHandling_ = true;
         for(int i = 0; i < nfds; ++i) {
-            Connection* connection = (Connection*)_active_events[i].data.ptr;
+            Channel* connection = (Channel*)_active_events[i].data.ptr;
             assert(connection != NULL);
             int ret = connection->handle(_active_events[i]);
-            if (ret == Connection::CONN_REMOVE) {
+            if (ret == Channel::CONN_REMOVE) {
                 DEBUG("will remove conn");
                 _poller->removeEvent(connection);
-            } else if (ret == Connection::CONN_UPDATE) {
+            } else if (ret == Channel::CONN_UPDATE) {
                 _poller->updateEvent(connection);
             }
         }
@@ -71,11 +71,11 @@ void EventLoop::quit() {
     quit_ = true;
 }
 
-int EventLoop::updateConnection(ConnectionPtr connection) {
+int EventLoop::updateChannel(ChannelPtr connection) {
     return _poller->updateEvent(connection);
 }
 
-int EventLoop::remove(ConnectionPtr connection) {
+int EventLoop::remove(ChannelPtr connection) {
     return _poller->removeEvent(connection);
 }
 

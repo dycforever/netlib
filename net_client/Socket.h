@@ -43,6 +43,7 @@ public:
                 setNonblocking();
             }
         }
+    explicit Socket(int socket): mSockfd(socket) {;}
     ~Socket();
 
     int bind(const InetAddress& localaddr);
@@ -61,7 +62,7 @@ public:
     void setKeepAlive(bool on);
 
     int send(const char* buf, size_t len);
-    int recv(char* buf, size_t len);
+    long recv(char* buf, size_t len);
 
 
     bool checkConnected();
@@ -79,8 +80,6 @@ private:
     int accept(int sockfd, struct sockaddr_in* addr);
 
     int mSockfd;
-
-
     bool mBlocking;
 };
 

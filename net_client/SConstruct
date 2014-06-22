@@ -4,7 +4,7 @@ import os
 import getpass
 user=getpass.getuser()
 
-num_cpu=1
+num_cpu=4
 SetOption('num_jobs', num_cpu)
 cflags="-g -std=c++0x"
 libsname=[
@@ -16,7 +16,7 @@ libsname=[
 include_dir = [ '/home/dyc/github/program/netlib/net_client',
                 '/home/dyc/github/program/netlib/net_client/utils',
                 '/home/dyc/github/program/netlib/net_client/tools',
-                '/home/dyc/tools/zlib', 
+                '/home/dyc/tools/zlib/include', 
                 '/home/dyc/tools/log4c/include', 
                 '/home/dyc/github/program/common', 
                 '/home/dyc/github/program/common/thread', 
@@ -27,9 +27,10 @@ include_dir = [ '/home/dyc/github/program/netlib/net_client',
 VariantDir('build', '.')
 
 SConscript(['./SConscript'], variant_dir='build', exports=['cflags', 'include_dir'], duplicate=0)
-SConscript(['utils/SConscript'], variant_dir='build/utils', exports='include_dir')
-SConscript(['test/SConscript'], variant_dir='build/test', exports='include_dir')
 SConscript(['example/SConscript'], variant_dir='build/example', exports=['cflags', 'include_dir'])
+
+# SConscript(['utils/SConscript'], variant_dir='build/utils', exports='include_dir')
+# SConscript(['test/SConscript'], variant_dir='build/test', exports='include_dir')
 
 
 

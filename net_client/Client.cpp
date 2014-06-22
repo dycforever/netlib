@@ -4,20 +4,23 @@
 namespace dyc
 {
 
-Connection* Client::connect(const InetAddress& addr) {
-    //        mEpoller = boost::shared_ptr<Epoller>(NEW Epoller());
+int Client::connect(const InetAddress& addr) {
+    // mEpoller = boost::shared_ptr<Epoller>(NEW Epoller());
     mEpoller = NEW Epoller();
-    mEpoller->createEpoll();
-
-    //        mLoop = boost::shared_ptr<EventLoop>(NEW EventLoop(mEpoller));
     mLoop = NEW EventLoop(mEpoller);
     mSock = NEW Socket(false);
+    if (mEpoller == NULL || mLoop == NULL || mSock == NULL) {
+        FATAL("new obj failed");
+        return false;
+    }
 
-    Connection* conn = NEW Connection(mSock, mLoop);
-    mEpoller->addRW(conn);
+    // mLoop = boost::shared_ptr<EventLoop>(NEW EventLoop(mEpoller));
+    // mSock = NEW Socket(true);
 
-    mSock->connect(addr);
-    return conn;
+    mEpoller->createEpoll();
+    mConnection = NEW Connection(mSock, mLoop);
+    mEpoller->addRW(mConnection);
+    return mSock->connect(addr);
 }
 
 void Client::start () {
@@ -30,13 +33,16 @@ void* Client::thr_fn(void* data) {
     p->loop();
 }
 
-int Client::send(const char* data, int64_t size) {
-    DelayFunctor func = boost::bind(&Connection::addBuffer, mConnection, data, size);
+int64_t Client::send(const char* data, int64_t size) {
+    Buffer buffer(data, (size_t)size, true);
+    buffer.setMesgId(mMesgId);
+    DelayFunctor func = boost::bind(&Connection::addBufferToSendQueue, mConnection, buffer);
+    ++mMesgId;
     mLoop->queueInLoop(func);
-    return 0;
+    return mMesgId;
 }
 
-int Client::send(const std::string& str) {
+int64_t Client::send(const std::string& str) {
     return send(str.c_str(), str.size());
 }
 

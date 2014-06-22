@@ -219,7 +219,7 @@ ParseRet HttpResponse::parseChunk(std::string& b) {
         }
         std::string chunkSizeStr(token.c_str(), chunkExt);
         int size = strtosize(chunkSizeStr);
-        DEBUG("get a chunk Size: %lu", size);
+        DEBUG("get a chunk Size: %d", size);
         if (size == 0) {
             ret = DONE;
             break;

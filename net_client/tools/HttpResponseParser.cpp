@@ -112,8 +112,7 @@ int HttpResponseParser::parse(std::string resp, bool isFinish) {
     return WAIT;
 }
 
-
-int HttpResponseParser::readData(Buffer& buffer) {
+int HttpResponseParser::readData(Buffer& buffer, Buffer& outptuBuffer) {
     size_t size = buffer.readableSize();
     mHasRead += size;
     char* buf = buffer.get(size);

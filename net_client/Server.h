@@ -1,5 +1,5 @@
-#ifndef Server_H
-#define Server_H
+#ifndef SERVER_H
+#define SERVER_H
 
 #include <map>
 #include <vector>
@@ -16,52 +16,49 @@
 #include "Epoller.h"
 #include "EventLoop.h"
 #include "Connection.h"
-#include "Task.h"
+#include "Accepter.h"
 
 namespace dyc {
 
-// class Server {
-// public:
-//     typedef boost::shared_ptr<SendTask> SendTaskPtr;
-//     typedef boost::function< SendTaskPtr (RecvTask*) > ReadCallbackFunc;
-//     typedef boost::function< int (Socket*) > ConnCallbackFunc;
-//     typedef boost::function<char* (const Head&)> MallocCallbackFunc;
-//     typedef boost::function<int (SendTaskPtr)> WriteCallbackFunc;
-// 
-//     typedef Connection* ConnectionPtr;
-//     Server(const InetAddress& listenAddr);
-//     ~Server();  
-// 
-//     const InetAddress& host_address() const { return _listenAddr; }
-// 
-//     int start();
-//     void stop();
-// 
-//     void remove_connection(const Socket& conn);
-// 
-//     int accepter(Socket* sock);
-//     Connection* newConnection(Socket*);
-// 
-//     void setReadCallback(ReadCallbackFunc cb) { _readCallback = cb;}
-//     void setWriteCallback(WriteCallbackFunc cb) { _writeCallback = cb;}
-//     void setMallocCallback(MallocCallbackFunc cb) { _mallocCallback = cb;}
-// 
-//     Connection* connect(const InetAddress&);
-// private:
-// 
-// //    typedef std::map<InetAddress, Connection*> ConnectionCollections;
-//     typedef std::set<ConnectionPtr> ConnectionCollections;
-//     const InetAddress _listenAddr;
-//     boost::shared_ptr<Epoller> _epoller;
-//     boost::scoped_ptr<Socket> _listenSocket;
-//     boost::shared_ptr<EventLoop> _loop;
-// 
-//     WriteCallbackFunc _writeCallback;
-//     ReadCallbackFunc _readCallback;
-//     ReadCallbackFunc _errorCallback;
-// 
-//     ConnectionCollections _connections;
-// };
+class Server {
+public:
+    typedef boost::function< int (Buffer&, Buffer&) > ReadCallbackFunc;
+    typedef boost::function< int (Buffer&) > WriteCallbackFunc;
+
+    typedef Connection* ConnectionPtr;
+//    typedef std::map<InetAddress, Connection*> ConnectionCollections;
+    typedef std::set<ConnectionPtr> ConnectionCollections;
+
+    Server(const InetAddress& listenAddr);
+    ~Server();  
+
+    int start();
+    void stop();
+
+    Connection* connect(const InetAddress&);
+    void removeConnection(const Socket& conn);
+    Connection* newConnection(Socket*);
+
+    const InetAddress& getAddress() const { return mListenAddr; }
+
+    void setReadCallback(ReadCallbackFunc cb) { mReadCallback = cb;}
+    void setWriteCallback(WriteCallbackFunc cb) { mWriteCallback = cb;}
+
+private:
+    const InetAddress mListenAddr;
+    Epoller*  mEpoller;
+    Socket*  mListenSocket;
+    EventLoop* mLoop; 
+    Accepter* mAccepter;
+//    boost::shared_ptr<Epoller> mEpoller;
+//    boost::scoped_ptr<Socket> mListenSocket;
+//    boost::shared_ptr<EventLoop> mLoop;
+
+    WriteCallbackFunc mWriteCallback;
+    ReadCallbackFunc mReadCallback;
+
+    ConnectionCollections mConnections;
+};
 
 }
 

@@ -17,7 +17,9 @@ lib_path=['/home/dyc/github/program/netlib/net_client/tools',
           '/home/dyc/github/program/netlib/net_client/build',
           '/home/dyc/github/program/common',
           '/home/dyc/tools/log4c/lib',
-          '/home/dyc/tools/zlib']
+          '/home/dyc/tools/zlib/lib']
 
-main = env.Program("main", ["main.cpp"], LINKFLAGS="", LIBPATH=lib_path, LIBS=libsname)
+env.Program("http_client", ["http_client.cpp"], LINKFLAGS="", LIBPATH=lib_path, LIBS=libsname)
+
+env.Program("trival_server", ["trival_server.cpp"], LINKFLAGS="", LIBPATH=lib_path, LIBS=libsname)
 

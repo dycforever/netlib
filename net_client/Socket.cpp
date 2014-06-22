@@ -38,7 +38,7 @@ int Socket::getopt(int level, int optname, void* optval, void* len) {
 
 bool Socket::checkConnected() {
     int sret = 0;
-    int sretlen;
+    int sretlen = static_cast<socklen_t>(sizeof sret);
     int ret = getopt(SOL_SOCKET, SO_ERROR, (void*)&sret, &sretlen);
     if(ret == -1)  {  
         FATAL("%s:%d, connection failed with errno: %d %s", __FILE__, __LINE__, errno, strerror(errno));  
@@ -62,6 +62,7 @@ int Socket::setopt(int level, int optname, void* optval, socklen_t len) {
 int Socket::connect(const InetAddress& peerAddr) {
    const struct sockaddr_in& sockAddr = peerAddr.getSockAddrInet();
    int ret = ::connect(mSockfd, sockaddr_cast(&sockAddr), static_cast<socklen_t>(sizeof sockAddr));
+   DEBUG("socket[%d] connect to addr[%s]", mSockfd, peerAddr.toIpPort().c_str());
    if ( mBlocking && ret < 0) {
         FATAL("ret:%d bind socket[%d] raw_ip[%s] port[%u] Die errno[%d] with %s", 
                 ret, mSockfd, inet_ntoa(sockAddr.sin_addr), ntohs(sockAddr.sin_port), errno, strerror(errno));
@@ -191,8 +192,8 @@ write_again:
     return count;
 }
 
-int Socket::recv(char* buf, size_t len) {
-    int count = 0;
+long Socket::recv(char* buf, size_t len) {
+    long count = 0;
 read_again:
     count = read(mSockfd, buf, len);
     if (count > 0) {
@@ -206,7 +207,7 @@ read_again:
         case EAGAIN:
             break;
         default:
-            FATAL("read return %d with errno[%d][%s], this socket is disconnected", count, errno, strerror(errno));
+            FATAL("read return %ld with errno[%d][%s], this socket is disconnected", count, errno, strerror(errno));
     };
     return count;
 }

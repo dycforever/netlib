@@ -4,7 +4,7 @@
 namespace dyc {
 
 Epoller::Epoller() {
-    _timeout = 100;
+    _timeout = 1000;
 }
 
 
@@ -12,29 +12,29 @@ void Epoller::setTimeout(int t) {
     _timeout = t;
 }
 
-int Epoller::addRead(ConnectionPtr connection) {
+int Epoller::addRead(ChannelPtr channel) {
     lock();
-    int ret = addEvent(connection, EPOLLIN);
+    int ret = addEvent(channel, EPOLLIN);
     unlock();
     return ret;
 }
 
-int Epoller::addWrite(ConnectionPtr connection) {
+int Epoller::addWrite(ChannelPtr channel) {
     lock();
-    int ret = addEvent(connection, EPOLLOUT);
+    int ret = addEvent(channel, EPOLLOUT);
     unlock();
     return ret;
 }
 
-int Epoller::addRW(ConnectionPtr connection) {
+int Epoller::addRW(ChannelPtr channel) {
     int ret = 0;
-    ret = addEvent(connection, EPOLLIN|EPOLLOUT);
+    ret = addEvent(channel, EPOLLIN|EPOLLOUT);
     return ret;
 }
 
-int Epoller::removeEvent(ConnectionPtr connection) {
+int Epoller::removeEvent(ChannelPtr channel) {
     lock();
-    int ret = _removeEvent(connection);
+    int ret = _removeEvent(channel);
     unlock();
     return ret;
 }
@@ -53,38 +53,38 @@ int Epoller::createEpoll() {
     if (sock < 0) {
         return sock;
     }
-    DEBUG("create epoll connection[%d]", sock);
+    DEBUG("create epoll socket[%d]", sock);
     _epoll_socket = sock;
 
     return 0;
 }
 
-int Epoller::_removeEvent(ConnectionPtr connection) {
-    int sockfd = connection->fd();
+int Epoller::_removeEvent(ChannelPtr channel) {
+    int sockfd = channel->fd();
     int epsfd = _epoll_socket;
     DEBUG("del port in epoll %d", epsfd);
     int ret = epoll_ctl(_epoll_socket, EPOLL_CTL_DEL, sockfd, NULL);
     if( ret < 0 ){
-        FATAL("remove connection:%d from epoll fd:%d failed", sockfd, epsfd);
+        FATAL("remove channel:%d from epoll fd:%d failed", sockfd, epsfd);
         return -1;
     }
     return 0;
 }
 
-int Epoller::addEvent(ConnectionPtr connection, uint32_t op_types) {
-    int sockfd = connection->fd();
-    connection->setEvents(op_types);
+int Epoller::addEvent(ChannelPtr channel, uint32_t op_types) {
+    int sockfd = channel->fd();
+    channel->setEvents(op_types);
 
     struct epoll_event event;
-    event.data.ptr = (void*)connection;
+    event.data.ptr = (void*)channel;
     event.events = op_types;
 
     int epsfd = _epoll_socket;
     const char* ev = (op_types==EPOLLIN) ? "epoll_in" : "epoll_out";
-    DEBUG("add [%d][%s] event in epoll connection[%d]", sockfd, ev, epsfd);
+    DEBUG("add socket[%d] event[%s] in epoll socket[%d]", sockfd, ev, epsfd);
     int ret = epoll_ctl(_epoll_socket, EPOLL_CTL_ADD, sockfd, &event);
     if( ret < 0 ){
-        FATAL("add connection:%d into epoll fd:%d failed errno:%d %s", sockfd, epsfd, errno, strerror(errno));
+        FATAL("add channel:%d into epoll fd:%d failed errno:%d %s", sockfd, epsfd, errno, strerror(errno));
         return -1;
     }
     return 0;
@@ -106,16 +106,15 @@ int Epoller::poll(Event* list) {
     return ret;
 }
 
-int Epoller::updateEvent(ConnectionPtr connection) {
+int Epoller::updateEvent(ChannelPtr channel) {
     struct epoll_event event;
-    int sockfd = connection->fd();
-    event.data.ptr = (void*)connection;
-    event.events = connection->getEvents();
-    // TODO: let getEvent readable
-    DEBUG("connection[%d] update event[%d] in epoll", sockfd, connection->getEvents());
+    int sockfd = channel->fd();
+    event.data.ptr = (void*)channel;
+    event.events = channel->getEvents();
+    DEBUG("channel[%d] update event[%d] in epoll", sockfd, channel->getEvents());
     int ret = epoll_ctl(_epoll_socket, EPOLL_CTL_MOD, sockfd, &event);
     if( ret < 0 ){
-        FATAL("ctl connection:%d into epoll fd:%d failed errno:%d %s", sockfd, _epoll_socket, errno, strerror(errno));
+        FATAL("ctl channel:%d into epoll fd:%d failed errno:%d %s", sockfd, _epoll_socket, errno, strerror(errno));
         return -1;
     }
     return 0;

@@ -12,30 +12,27 @@
 #include "SpinLock.h"
 #include "Socket.h"
 #include "Buffer.h"
+#include "Channel.h"
 #include "common.h"
 
 namespace dyc {
 
 class EventLoop;
 
-class Connection {
+class Connection : public Channel {
 private:
-    static int defaultWriteCallback() {}
+    static int defaultWriteCallback(Buffer&) {}
     static int defaultConnCallback() {}
-    static int defaultReadCallback(Buffer&) {}
+    static int defaultReadCallback(Buffer&, Buffer&) {}
 
-public:
-    static const int CONN_REMOVE = -1;
-    static const int CONN_CONTINUE = 0;
-    static const int CONN_UPDATE = 1;
 public:
 //    typedef boost::shared_ptr<Socket> SocketPtr;
     typedef Socket* SocketPtr;
-    typedef Buffer* BufferPtr;
+//    typedef Buffer* BufferPtr;
 
-    typedef boost::function< int (Buffer&) > ReadCallbackFunc;
+    typedef boost::function< int (Buffer&, Buffer&) > ReadCallbackFunc;
     typedef boost::function< int () > ConnCallbackFunc;
-    typedef boost::function< int () > WriteCallbackFunc;
+    typedef boost::function< int (Buffer&) > WriteCallbackFunc;
 
     explicit Connection(SocketPtr, EventLoop*);
 
@@ -57,34 +54,35 @@ public:
     void enableWrite();
     void disableWrite();
 
-    int readSocket();
+    long readSocket();
     int writeSocket();
-    int _writeSocket(BufferPtr buffer);
+    long _writeSocket(Buffer& buffer);
 
-    void addBuffer(const char* data, int64_t size);
-    void takeBuffer();
+    void addBufferToSendQueue(const char* data, size_t size);
+    void addBufferToSendQueue(Buffer);
+    int64_t takeOffBuffer();
 
 private:
     InetAddress localAddr;
     InetAddress peerAddr;
+    bool mConnected;
     SocketPtr mSocket;
-
-//    boost::shared_ptr<EventLoop> _loop;
-    EventLoop* _loop;
+//    boost::shared_ptr<EventLoop> mLoop;
+    EventLoop* mLoop;
 
     WriteCallbackFunc mWriteCallback;
     ReadCallbackFunc mReadCallback;
     ConnCallbackFunc mConnCallback;
 
-    bool mConnected;
     int mEvents;
-    Buffer mReadBuffer;
-    std::list<BufferPtr> mSendBuffers;
+    Buffer mRecvBuffer;
+    Buffer mOutputBuffer;
+    std::list<Buffer> mSendBuffers;
     size_t mSendInqueue;
     size_t mSendBySocket;
     
     SpinLock mLock;
-    BufferPtr getSendBuffer();
+    Buffer& getSendBuffer();
 };
 
 }

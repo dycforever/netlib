@@ -13,7 +13,6 @@
 
 class Buffer {
 public:
-
     Buffer(const char* data, size_t size, bool full=false) : mData(const_cast<char*>(data)), 
     mReadPos(0), mSize(size), mFinish(false) {
         if (full)
@@ -22,9 +21,9 @@ public:
             mWritePos = 0;
     }
 
-    void hasWriten(size_t len) {
-        mWritePos += len;
-    }
+    int64_t getMesgId(int64_t mesgId) { return mMesgId; }
+    void setMesgId(int64_t mesgId) { mMesgId = mesgId; }
+    void hasWriten(size_t len) { mWritePos += len; }
 
     void makeSpace(size_t size) {
         mData = NEW char[size];
@@ -41,9 +40,19 @@ public:
         append(str.c_str(), str.size());
     }
 
+    int expand(size_t len) {
+        char* tmpBuf = NEW char[readableSize() + len * 2];
+        mSize = readableSize() + len * 2;
+        std::copy(mData, mData+mWritePos, tmpBuf);
+        DELETES(mData);
+        mData = tmpBuf;
+    }
+
     int append(const char* data, size_t len) {
         if (mWritePos + len > mSize) {
-            return -1;
+            if (expand(len) < 0) {
+                return -1;
+            }
         }
         std::copy(data, data+len, beginWrite());
         hasWriten(len);
@@ -55,17 +64,13 @@ public:
 
     char* beginWrite() { return mData + mWritePos; }
     const char* beginRead() { return mData + mReadPos; }
+    const char* data() { return mData; }
+    void setFinish() { mFinish = true; }
+    bool isFinish() { return mFinish; }
 
-    const char* data() { 
-        return mData; 
-    }
-
-    void setFinish() {
-        mFinish = true;
-    }
-
-    bool isFinish() {
-        return mFinish;
+    void reset() {
+        mReadPos = 0;
+        mWritePos = 0;
     }
 
 private:
@@ -73,9 +78,8 @@ private:
     size_t mReadPos;
     size_t mWritePos;
     size_t mSize;
-    // TODO ?
     bool mFinish;
-
+    int64_t mMesgId;
     static const char kCRLF[];
 };
 

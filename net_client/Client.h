@@ -1,8 +1,12 @@
 
+#include <boost/bind.hpp>
+
 #include "common.h"
 #include "EventLoop.h"
 #include "InetAddress.h"
-#include <boost/bind.hpp>
+#include "Socket.h"
+#include "Buffer.h"
+#include "Connection.h"
 
 namespace dyc
 {
@@ -10,20 +14,23 @@ namespace dyc
 class Client {
     typedef Socket* SocketPtr;
     typedef boost::function<void()> DelayFunctor;
-    typedef boost::function< int (Buffer&) > ReadCallbackFunc;
+    typedef boost::function< int (Buffer&, Buffer&) > ReadCallbackFunc;
     typedef boost::function< int () > ConnCallbackFunc;
-    typedef boost::function< int () > WriteCallbackFunc;
+    typedef boost::function< int (Buffer&) > WriteCallbackFunc;
 
 public:
-    Client() { }
+    Client():mMesgId(0) { }
 
-    Connection* connect(const InetAddress& addr);
+    int connect(const InetAddress& addr);
     static void* thr_fn(void* data);
     void start ();
 
-int send(const char* data, int64_t size);
+    void setReadCallback(ReadCallbackFunc cb) { mConnection->setReadCallback(cb);}
+    void setConnCallback(ConnCallbackFunc cb) { mConnection->setConnCallback(cb);}
+    void setWriteCallback(WriteCallbackFunc cb) { mConnection->setWriteCallback(cb);}
 
-int send(const std::string& str);
+    int64_t send(const char* data, int64_t size);
+    int64_t send(const std::string& str);
 
 private:
     SocketPtr mSock;
@@ -32,6 +39,7 @@ private:
     EventLoop* mLoop;
     Epoller* mEpoller;
     Connection* mConnection;
+    int64_t mMesgId;
 };
 
 }

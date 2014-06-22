@@ -122,28 +122,24 @@ inline void fromIpPort(const std::string ip, uint16_t port,
     fromIpPort(ip.c_str(), port, addr);
 }
 
-inline int getSocketError(int sockfd)
-{
-  int optval;
-  socklen_t optlen = static_cast<socklen_t>(sizeof optval);
-
-  if (::getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0)
-  {
-    return errno;
-  }
-  else
-  {
-    return optval;
-  }
-}
+// inline int getSocketError(int sockfd)
+// {
+//   int optval;
+//   socklen_t optlen = static_cast<socklen_t>(sizeof optval);
+// 
+//   if (::getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &optval, &optlen) < 0) {
+//     return errno;
+//   } else {
+//     return optval;
+//   }
+// }
 
 inline struct ::sockaddr_in getLocalAddr(int sockfd)
 {
   struct ::sockaddr_in localaddr;
   bzero(&localaddr, sizeof localaddr);
   socklen_t addrlen = static_cast<socklen_t>(sizeof localaddr);
-  if (::getsockname(sockfd, sockaddr_cast(&localaddr), &addrlen) < 0)
-  {
+  if (::getsockname(sockfd, sockaddr_cast(&localaddr), &addrlen) < 0) {
     std::cerr << "getLocalAddr";
   }
   return localaddr;
