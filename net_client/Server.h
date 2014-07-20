@@ -22,8 +22,8 @@ namespace dyc {
 
 class Server {
 public:
-    typedef boost::function< int (Buffer&, Buffer&) > ReadCallbackFunc;
-    typedef boost::function< int (Buffer&) > WriteCallbackFunc;
+    typedef boost::function< int (Buffer*, Buffer*) > ReadCallbackFunc;
+    typedef boost::function< int (Buffer*) > WriteCallbackFunc;
 
     typedef Connection* ConnectionPtr;
 //    typedef std::map<InetAddress, Connection*> ConnectionCollections;

@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
     assert(ret == 0);
 
     HttpResponseParser parser;
-    boost::function< int (Buffer&, Buffer&) > readfunc = boost::bind(&HttpResponseParser::readData, &parser, _1, _2);
+    boost::function< int (Buffer*, Buffer*) > readfunc = boost::bind(&HttpResponseParser::readData, &parser, _1, _2);
     boost::function< int () > connfunc = boost::bind(&HttpResponseParser::conn, &parser);
 
     client.setReadCallback(readfunc);

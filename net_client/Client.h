@@ -14,9 +14,9 @@ namespace dyc
 class Client {
     typedef Socket* SocketPtr;
     typedef boost::function<void()> DelayFunctor;
-    typedef boost::function< int (Buffer&, Buffer&) > ReadCallbackFunc;
+    typedef boost::function< int (Buffer*, Buffer*) > ReadCallbackFunc;
     typedef boost::function< int () > ConnCallbackFunc;
-    typedef boost::function< int (Buffer&) > WriteCallbackFunc;
+    typedef boost::function< int (Buffer*) > WriteCallbackFunc;
 
 public:
     Client():mMesgId(0) { }

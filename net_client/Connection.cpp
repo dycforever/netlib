@@ -9,16 +9,16 @@ namespace dyc {
 
 Connection::Connection(SocketPtr socket, EventLoop* loop): 
     mConnected(false), mSocket(socket), mLoop(loop), 
-    mRecvBuffer(NULL, 0), mOutputBuffer(NULL, 0), mSendInqueue(0), mSendBySocket(0) { 
-        mRecvBuffer.makeSpace(1024*1024);
+    mRecvBuffer(NULL), mOutputBuffer(NULL), mSendInqueue(0), mSendBySocket(0) { 
+        mRecvBuffer->makeSpace(1024*1024);
         mWriteCallback = boost::bind(&defaultWriteCallback, mOutputBuffer);
         mReadCallback = boost::bind(&defaultReadCallback, _1, _2);
         mConnCallback = boost::bind(&defaultConnCallback);
     }
 
-void Connection::addBufferToSendQueue(Buffer buffer) {
+void Connection::addBufferToSendQueue(Buffer* buffer) {
     LockGuard<SpinLock> g(mLock);
-    mSendInqueue += buffer.readableSize();
+    mSendInqueue += buffer->readableSize();
     DEBUG("add buffer in send queue");
     mSendBuffers.push_back(buffer);
     enableWrite();
@@ -28,7 +28,7 @@ void Connection::addBufferToSendQueue(const char* data, size_t size) {
     LockGuard<SpinLock> g(mLock);
     mSendInqueue += size;
     DEBUG("add buffer in send queue");
-    Buffer buffer(data, size, true);
+    Buffer* buffer = NEW Buffer(data, size, true);
     mSendBuffers.push_back(buffer);
     enableWrite();
 }
@@ -39,11 +39,10 @@ int64_t Connection::takeOffBuffer() {
     mSendBuffers.pop_front();
 }
 
-Buffer& Connection::getSendBuffer() {
+Buffer* Connection::getSendBuffer() {
     LockGuard<SpinLock> g(mLock);
     if (mSendBuffers.size() == 0) {
-        // FIXME: use BufferPtr instead of Buffer ?
-        return Buffer(NULL, 0);
+        return NULL;
     }
     return mSendBuffers.front();
 }
@@ -51,32 +50,32 @@ Buffer& Connection::getSendBuffer() {
 
 long Connection::readSocket() {
     // TODO: if buffer size == 0 ?
-    long ret = mSocket->recv(mRecvBuffer.beginWrite(), mRecvBuffer.writableSize());
+    long ret = mSocket->recv(mRecvBuffer->beginWrite(), mRecvBuffer->writableSize());
     DEBUG("read %ld bytes", ret);
     if (ret > 0) {
-        mRecvBuffer.hasWriten(static_cast<size_t>(ret));
+        mRecvBuffer->hasWriten(static_cast<size_t>(ret));
     }
     return ret;
 }
 
 
-long Connection::_writeSocket(Buffer& buffer) {
-    long ret = mSocket->send(buffer.beginRead(), buffer.readableSize());
+long Connection::_writeSocket(Buffer* buffer) {
+    long ret = mSocket->send(buffer->beginRead(), buffer->readableSize());
     DEBUG("write %ld bytes", ret);
     size_t len = static_cast<size_t>(ret);
     if (ret > 0) {
         mSendBySocket += len;
-        buffer.get(len);
+        buffer->get(len);
     }
     return ret;
 }
 
 int Connection::writeSocket() {
     long ret = CONN_CONTINUE;
-    Buffer& buffer = getSendBuffer();
-    DEBUG("get buffer of size: %lu", buffer.readableSize());
+    Buffer* buffer = getSendBuffer();
+    DEBUG("get buffer of size: %lu", buffer->readableSize());
     while (true) {
-        if (buffer.readableSize()==0) {
+        if (buffer == NULL || buffer->readableSize()==0) {
             ret = CONN_UPDATE;
             disableWrite();
             break;
@@ -94,12 +93,13 @@ int Connection::writeSocket() {
             }
             break;
         }
-        if (!buffer.readableSize()) {
+        if (!buffer->readableSize()) {
             int64_t mId = takeOffBuffer();
-            mWriteCallback(mOutputBuffer);
+            mWriteCallback(buffer);
+            // TODO delete buffer ?
         }
         buffer = getSendBuffer();
-        DEBUG("get buffer of size: %lu", buffer.readableSize());
+        DEBUG("get buffer of size: %lu", buffer->readableSize());
     }
     return ret;
 }
@@ -113,13 +113,13 @@ int Connection::handle(const epoll_event& event) {
         if (readCount <= 0) {
             ret = CONN_REMOVE;
             mConnected = false;
-            mRecvBuffer.setFinish();
+            mRecvBuffer->setFinish();
         } else {
             ret = CONN_CONTINUE;
         }
-        mOutputBuffer.reset();
+        mOutputBuffer->reset();
         mReadCallback(mRecvBuffer, mOutputBuffer);
-        if (mOutputBuffer.readableSize() > 0) {
+        if (mOutputBuffer->readableSize() > 0) {
             mSendBuffers.push_back(mOutputBuffer);
         }
     } 

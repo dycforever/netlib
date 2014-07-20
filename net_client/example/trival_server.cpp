@@ -34,16 +34,16 @@ int parseArg(int argc, char** argv) {
     return 0;
 } // parseArg()
 
-int getConnected(Buffer& buffer, Buffer& outputBuffer) {
-    size_t size = buffer.readableSize();
-    string mesg(buffer.get(size), size);
+int getConnected(Buffer* buffer, Buffer* outputBuffer) {
+    size_t size = buffer->readableSize();
+    string mesg(buffer->get(size), size);
     cout << "recv " << size << "bytes data: " << mesg << endl;
-    outputBuffer.append("hello response");
+    outputBuffer->append("hello response");
     return 0;
 }
 
 int main() {
-    typedef boost::function< int (Buffer&, Buffer&) > ReadCallbackFunc;
+    typedef boost::function< int (Buffer*, Buffer*) > ReadCallbackFunc;
 
     InetAddress addr(ip, static_cast<uint16_t>(atoi(port.c_str())));
     Server server(addr);
