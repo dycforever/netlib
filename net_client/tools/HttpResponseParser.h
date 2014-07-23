@@ -22,7 +22,7 @@ public:
     ParseRet parseRespLine(std::string line);
     ParseRet parseRespHeader(std::string line);
     int parse(std::string resp, bool isFinish);
-    int readData(Buffer& buffer, Buffer&);
+    int readData(Buffer* buffer, Buffer*);
     int conn();
     std::string out();
     void dump(const std::string& filename) ;

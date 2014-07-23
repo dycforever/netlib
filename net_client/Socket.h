@@ -64,7 +64,7 @@ public:
     int send(const char* buf, size_t len);
     long recv(char* buf, size_t len);
 
-
+    bool getPeerAddr(InetAddress& addr);
     bool checkConnected();
 
     int getopt(int level, int optname, void* optval, void* len);

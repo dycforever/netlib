@@ -21,18 +21,18 @@ class EventLoop;
 
 class Connection : public Channel {
 private:
-    static int defaultWriteCallback(Buffer&) {}
+    static int defaultWriteCallback(Buffer*) {}
     static int defaultConnCallback() {}
-    static int defaultReadCallback(Buffer&, Buffer&) {}
+    static int defaultReadCallback(Buffer*, Buffer*) {}
 
 public:
 //    typedef boost::shared_ptr<Socket> SocketPtr;
     typedef Socket* SocketPtr;
 //    typedef Buffer* BufferPtr;
 
-    typedef boost::function< int (Buffer&, Buffer&) > ReadCallbackFunc;
+    typedef boost::function< int (Buffer*, Buffer*) > ReadCallbackFunc;
     typedef boost::function< int () > ConnCallbackFunc;
-    typedef boost::function< int (Buffer&) > WriteCallbackFunc;
+    typedef boost::function< int (Buffer*) > WriteCallbackFunc;
 
     explicit Connection(SocketPtr, EventLoop*);
 
@@ -56,10 +56,10 @@ public:
 
     long readSocket();
     int writeSocket();
-    long _writeSocket(Buffer& buffer);
+    long _writeSocket(Buffer* buffer);
 
     void addBufferToSendQueue(const char* data, size_t size);
-    void addBufferToSendQueue(Buffer);
+    void addBufferToSendQueue(Buffer*);
     int64_t takeOffBuffer();
 
 private:
@@ -75,14 +75,18 @@ private:
     ConnCallbackFunc mConnCallback;
 
     int mEvents;
-    Buffer mRecvBuffer;
-    Buffer mOutputBuffer;
-    std::list<Buffer> mSendBuffers;
+    Buffer* mRecvBuffer;
+    Buffer* mOutputBuffer;
+    std::list<Buffer*> mSendBuffers;
     size_t mSendInqueue;
     size_t mSendBySocket;
     
     SpinLock mLock;
+<<<<<<< HEAD
     Buffer getSendBuffer();
+=======
+    Buffer* getSendBuffer();
+>>>>>>> 4646e00098d7f4b437a8079599f3a91e25afd086
 };
 
 }

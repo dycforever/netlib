@@ -167,6 +167,21 @@ void Socket::setReuseAddr(bool on)
     }
 }
 
+
+bool Socket::getPeerAddr(InetAddress& addr)
+{
+  struct sockaddr_in peeraddr;
+  bzero(&peeraddr, sizeof peeraddr);
+  socklen_t addrlen = static_cast<socklen_t>(sizeof peeraddr);
+  if (::getpeername(mSockfd, sockaddr_cast(&peeraddr), &addrlen) < 0)
+  {
+    FATAL("sockets::getPeerAddr failed");
+    return false;
+  }
+  addr = InetAddress(peeraddr);
+  return true;
+}
+
 void Socket::setKeepAlive(bool on) {
     int optval = on ? 1 : 0;
     ::setsockopt(mSockfd, SOL_SOCKET, SO_KEEPALIVE,

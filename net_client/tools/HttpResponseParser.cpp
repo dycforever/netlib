@@ -112,13 +112,13 @@ int HttpResponseParser::parse(std::string resp, bool isFinish) {
     return WAIT;
 }
 
-int HttpResponseParser::readData(Buffer& buffer, Buffer& outptuBuffer) {
-    size_t size = buffer.readableSize();
+int HttpResponseParser::readData(Buffer* buffer, Buffer* outptuBuffer) {
+    size_t size = buffer->readableSize();
     mHasRead += size;
-    char* buf = buffer.get(size);
+    char* buf = buffer->get(size);
     DEBUG("read %lu bytes data", size);
     std::string resp(buf, size);
-    if (parse(resp, buffer.isFinish()) == DONE) {
+    if (parse(resp, buffer->isFinish()) == DONE) {
         mCond.notify();
     }
     return 0;
