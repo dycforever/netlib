@@ -1,7 +1,6 @@
 
 #include <strings.h>  
 #include "InetAddress.h"
-#include <netinet/in.h>
 
 namespace dyc {
 

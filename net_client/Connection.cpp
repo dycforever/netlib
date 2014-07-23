@@ -39,7 +39,9 @@ int64_t Connection::takeOffBuffer() {
     mSendBuffers.pop_front();
 }
 
-Buffer& Connection::getSendBuffer() {
+Buffer Connection::getSendBuffer() {
+    // TODO: change Buffer to Buffer*
+    assert(false);
     LockGuard<SpinLock> g(mLock);
     if (mSendBuffers.size() == 0) {
         // FIXME: use BufferPtr instead of Buffer ?
@@ -73,7 +75,11 @@ long Connection::_writeSocket(Buffer& buffer) {
 
 int Connection::writeSocket() {
     long ret = CONN_CONTINUE;
-    Buffer& buffer = getSendBuffer();
+
+    // TODO: change Buffer to Buffer*
+    assert(false);
+    Buffer buffer = getSendBuffer();
+
     DEBUG("get buffer of size: %lu", buffer.readableSize());
     while (true) {
         if (buffer.readableSize()==0) {
