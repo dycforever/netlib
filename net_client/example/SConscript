@@ -13,8 +13,7 @@ libsname=[
      'pthread'
 ]
 
-lib_path=['/home/dyc/github/program/netlib/net_client/tools', 
-          '/home/dyc/github/program/netlib/net_client/build',
+lib_path=['/home/dyc/github/netlib/net_client/build',
           '/home/dyc/github/program/common',
           '/home/dyc/tools/log4c/lib',
           '/home/dyc/tools/zlib/lib']

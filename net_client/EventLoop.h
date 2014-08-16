@@ -7,7 +7,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "Mutex.h"
+#include "thread/ThreadLock.h"
 #include "Epoller.h"
 
 namespace dyc 

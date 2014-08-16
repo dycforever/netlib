@@ -2,11 +2,13 @@
 #ifndef __HTTPRESPONSEPARSER_H__
 #define __HTTPRESPONSEPARSER_H__
 
-#include "Buffer.h"
 #include "common.h"
-#include "Condition.h"
-#include "HttpResponse.h"
-#include "Tokenizer.h"
+#include "thread/Condition.h"
+
+#include "Buffer.h"
+#include "tools/HttpResponse.h"
+#include "netutils/Tokenizer.h"
+#include "netutils/Log.h"
 
 namespace dyc {
 

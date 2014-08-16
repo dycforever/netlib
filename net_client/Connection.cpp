@@ -3,7 +3,7 @@
 
 #include "Connection.h"
 #include "EventLoop.h"
-#include "util.h"
+#include "netutils/netutils.h"
 
 namespace dyc {
 
@@ -19,7 +19,7 @@ Connection::Connection(SocketPtr socket, EventLoop* loop):
 void Connection::addBufferToSendQueue(Buffer* buffer) {
     LockGuard<SpinLock> g(mLock);
     mSendInqueue += buffer->readableSize();
-    DEBUG("add buffer in send queue");
+    DEBUG_LOG("add buffer in send queue");
     mSendBuffers.push_back(buffer);
     enableWrite();
 }
@@ -27,7 +27,7 @@ void Connection::addBufferToSendQueue(Buffer* buffer) {
 void Connection::addBufferToSendQueue(const char* data, size_t size) {
     LockGuard<SpinLock> g(mLock);
     mSendInqueue += size;
-    DEBUG("add buffer in send queue");
+    DEBUG_LOG("add buffer in send queue");
     Buffer* buffer = NEW Buffer(data, size, true);
     mSendBuffers.push_back(buffer);
     enableWrite();
@@ -35,17 +35,11 @@ void Connection::addBufferToSendQueue(const char* data, size_t size) {
 
 int64_t Connection::takeOffBuffer() {
     LockGuard<SpinLock> g(mLock);
-    DEBUG("remove buffer in send queue");
+    DEBUG_LOG("remove buffer in send queue");
     mSendBuffers.pop_front();
 }
 
-<<<<<<< HEAD
-Buffer Connection::getSendBuffer() {
-    // TODO: change Buffer to Buffer*
-    assert(false);
-=======
 Buffer* Connection::getSendBuffer() {
->>>>>>> 4646e00098d7f4b437a8079599f3a91e25afd086
     LockGuard<SpinLock> g(mLock);
     if (mSendBuffers.size() == 0) {
         return NULL;
@@ -57,7 +51,7 @@ Buffer* Connection::getSendBuffer() {
 long Connection::readSocket() {
     // TODO: if buffer size == 0 ?
     long ret = mSocket->recv(mRecvBuffer->beginWrite(), mRecvBuffer->writableSize());
-    DEBUG("read %ld bytes", ret);
+    DEBUG_LOG("read %ld bytes", ret);
     if (ret > 0) {
         mRecvBuffer->hasWriten(static_cast<size_t>(ret));
     }
@@ -67,7 +61,7 @@ long Connection::readSocket() {
 
 long Connection::_writeSocket(Buffer* buffer) {
     long ret = mSocket->send(buffer->beginRead(), buffer->readableSize());
-    DEBUG("write %ld bytes", ret);
+    DEBUG_LOG("write %ld bytes", ret);
     size_t len = static_cast<size_t>(ret);
     if (ret > 0) {
         mSendBySocket += len;
@@ -78,17 +72,8 @@ long Connection::_writeSocket(Buffer* buffer) {
 
 int Connection::writeSocket() {
     long ret = CONN_CONTINUE;
-<<<<<<< HEAD
-
-    // TODO: change Buffer to Buffer*
-    assert(false);
-    Buffer buffer = getSendBuffer();
-
-    DEBUG("get buffer of size: %lu", buffer.readableSize());
-=======
     Buffer* buffer = getSendBuffer();
-    DEBUG("get buffer of size: %lu", buffer->readableSize());
->>>>>>> 4646e00098d7f4b437a8079599f3a91e25afd086
+    DEBUG_LOG("get buffer of size: %lu", buffer->readableSize());
     while (true) {
         if (buffer == NULL || buffer->readableSize()==0) {
             ret = CONN_UPDATE;
@@ -99,11 +84,11 @@ int Connection::writeSocket() {
         ret = _writeSocket(buffer);
         if (ret < 0) {
             if (errno != EAGAIN) {
-                WARN("send data failed");
+                WARN_LOG("send data failed");
                 mConnected = false;
                 ret = CONN_REMOVE;
             } else {
-                DEBUG("send data delay");
+                DEBUG_LOG("send data delay");
                 ret = CONN_UPDATE; 
             }
             break;
@@ -114,7 +99,7 @@ int Connection::writeSocket() {
             // TODO delete buffer ?
         }
         buffer = getSendBuffer();
-        DEBUG("get buffer of size: %lu", buffer->readableSize());
+        DEBUG_LOG("get buffer of size: %lu", buffer->readableSize());
     }
     return ret;
 }
@@ -124,7 +109,7 @@ int Connection::handle(const epoll_event& event) {
     long readCount = 0;
     if (event.events & EPOLLIN) {
         readCount = readSocket();
-        DEBUG("handle in event, read %ld bytes", readCount);
+        DEBUG_LOG("handle in event, read %ld bytes", readCount);
         if (readCount <= 0) {
             ret = CONN_REMOVE;
             mConnected = false;
@@ -141,7 +126,7 @@ int Connection::handle(const epoll_event& event) {
 
     if (event.events & EPOLLOUT || mSendBuffers.size() > 0) {
         if (!mConnected) {
-            DEBUG("handle conn event");
+            DEBUG_LOG("handle conn event");
             if (mSocket->checkConnected()) {
                 mConnected = true;
                 mConnCallback();
@@ -151,10 +136,10 @@ int Connection::handle(const epoll_event& event) {
             }
             return ret;
         } 
-        DEBUG("handle write event");
+        DEBUG_LOG("handle write event");
         ret = writeSocket();
     } else {
-        WARN("unknow event");
+        WARN_LOG("unknow event");
     }
     return ret;
 }

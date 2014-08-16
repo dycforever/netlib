@@ -3,8 +3,10 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "Channel.h"
 #include "common.h"
+
+#include "Channel.h"
+#include "netutils/Log.h"
 
 namespace dyc {
 

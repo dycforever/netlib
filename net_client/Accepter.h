@@ -16,9 +16,9 @@ public:
     int accepter() {
         InetAddress addr;
         int newfd = mSocket->accept(addr);
-        NOTICE("accept a new conn with addr:%s", addr.toIpPort().c_str());
+        NOTICE_LOG("accept a new conn with addr:%s", addr.toIpPort().c_str());
         if (newfd< 0) {
-            FATAL("fd[%d] errno[%d]: %s", newfd, errno, strerror(errno));
+            FATAL_LOG("fd[%d] errno[%d]: %s", newfd, errno, strerror(errno));
             return -1;
         }
         Socket* newso = NEW Socket(newfd);
@@ -41,7 +41,7 @@ public:
         if (event.events & EPOLLIN)  {
             ret = accepter();
         } else {
-            WARN("strange! listen socket found %d event", event.events);
+            WARN_LOG("strange! listen socket found %d event", event.events);
         }
         return ret;
     }

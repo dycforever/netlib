@@ -59,12 +59,12 @@ int HttpResponseParser::parse(std::string resp, bool isFinish) {
     size_t start = 0;
     ParseRet ret;
     mResponse.append(resp);
-    DEBUG("at first: %lu", mResponse.size());
+    DEBUG_LOG("at first: %lu", mResponse.size());
     if (mPhase == LINE) {
         // TODO if too long, return error
         start = getToken(mResponse, start, token, "\r\n");
         if (start == std::string::npos) {
-            DEBUG("read response line return WATI");
+            DEBUG_LOG("read response line return WATI");
             return WAIT;
         }
         ret = parseRespLine(token);
@@ -78,15 +78,15 @@ int HttpResponseParser::parse(std::string resp, bool isFinish) {
         }
     }
 
-    DEBUG("after parse header: %lu", mResponse.size());
+    DEBUG_LOG("after parse header: %lu", mResponse.size());
     while(mPhase == HEADER) {
         size_t ostart = start;
         start = getToken(mResponse, start, token, "\r\n");
         if (start == std::string::npos) {
-            DEBUG("read header return WATI");
+            DEBUG_LOG("read header return WATI");
             return WAIT;
         }
-        DEBUG("header line: %s", token.c_str());
+        DEBUG_LOG("header line: %s", token.c_str());
         if (token == "") {
             mResponse = mResponse.substr(start, mResponse.size()-start);
             mPhase = BODY;
@@ -96,7 +96,7 @@ int HttpResponseParser::parse(std::string resp, bool isFinish) {
         ret = parseRespHeader(token);
         if (ret != DONE) {
             mResponse = mResponse.substr(ostart, mResponse.size()-ostart);
-            INFO("return WATI2");
+            INFO_LOG("return WATI2");
             return WAIT;
         }
     }
@@ -116,7 +116,7 @@ int HttpResponseParser::readData(Buffer* buffer, Buffer* outptuBuffer) {
     size_t size = buffer->readableSize();
     mHasRead += size;
     char* buf = buffer->get(size);
-    DEBUG("read %lu bytes data", size);
+    DEBUG_LOG("read %lu bytes data", size);
     std::string resp(buf, size);
     if (parse(resp, buffer->isFinish()) == DONE) {
         mCond.notify();

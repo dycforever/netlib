@@ -17,13 +17,13 @@ EventLoop::EventLoop(Epoller* poller)
     iteration_(0),
     _poller(poller) {
         if (t_loopInThisThread) {
-            FATAL("Another EventLoop exists in this thread ");
+            FATAL_LOG("Another EventLoop exists in this thread ");
         } else {
             t_loopInThisThread = this;
         }
         _active_events = NEW Event[Epoller::EPOLL_MAX_LISTEN_NUMBER];
         if (_active_events == NULL) {
-            FATAL("new active events failed");
+            FATAL_LOG("new active events failed");
         }
     }
 
@@ -41,9 +41,9 @@ void EventLoop::loop() {
         ++iteration_;
 
         int nfds = _poller->poll(_active_events);
-        DEBUG("eventloop detect %d events", nfds);
+        DEBUG_LOG("eventloop detect %d events", nfds);
         if (nfds < 0) {
-            FATAL("poll failed: %d", nfds);
+            FATAL_LOG("poll failed: %d", nfds);
             return;
         }
 
@@ -53,7 +53,7 @@ void EventLoop::loop() {
             assert(connection != NULL);
             int ret = connection->handle(_active_events[i]);
             if (ret == Channel::CONN_REMOVE) {
-                DEBUG("will remove conn");
+                DEBUG_LOG("will remove conn");
                 _poller->removeEvent(connection);
             } else if (ret == Channel::CONN_UPDATE) {
                 _poller->updateEvent(connection);

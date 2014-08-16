@@ -10,7 +10,7 @@ int Client::connect(const InetAddress& addr) {
     mLoop = NEW EventLoop(mEpoller);
     mSock = NEW Socket(false);
     if (mEpoller == NULL || mLoop == NULL || mSock == NULL) {
-        FATAL("new obj failed");
+        FATAL_LOG("new obj failed");
         return false;
     }
 

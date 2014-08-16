@@ -1,13 +1,12 @@
 
-#include "util.h"
 #include "Socket.h"
-#include "Tokenizer.h"
 #include "InetAddress.h"
 #include "EventLoop.h"
-#include "HttpRequest.h"
-#include "HttpResponse.h"
-#include "HttpResponseParser.h"
+#include "tools/HttpRequest.h"
+#include "tools/HttpResponse.h"
+#include "tools/HttpResponseParser.h"
 #include "Client.h"
+#include "netutils/Tokenizer.h"
 
 #include <boost/bind.hpp>
 

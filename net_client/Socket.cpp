@@ -5,7 +5,7 @@
 
 #include "InetAddress.h"
 #include "Socket.h"  
-#include "log.h"  
+#include "netutils/Log.h"  
 
 namespace dyc {
 
@@ -20,16 +20,16 @@ ssize_t Socket::recvmsg(struct msghdr *msg, int flags) {
 Socket::~Socket()
 {
     if (close(mSockfd) == 0) {
-        INFO("close %d success", mSockfd);
+        INFO_LOG("close %d success", mSockfd);
     } else {
-        FATAL("close %d failed: %d %s", mSockfd, errno, strerror(errno));
+        FATAL_LOG("close %d failed: %d %s", mSockfd, errno, strerror(errno));
     }
 }
 
 int Socket::getopt(int level, int optname, void* optval, void* len) {
     int ret = ::getsockopt(mSockfd, level, optname, optval, (socklen_t*)len);
     if (ret < 0) {
-        FATAL("getsockopt() failed, ret:%d socket[%d] level[%d] optname[%u] errno[%d] with %s", 
+        FATAL_LOG("getsockopt() failed, ret:%d socket[%d] level[%d] optname[%u] errno[%d] with %s", 
                 ret, mSockfd, level, optname, errno, strerror(errno));
         return ret;
     }
@@ -41,10 +41,10 @@ bool Socket::checkConnected() {
     int sretlen = static_cast<socklen_t>(sizeof sret);
     int ret = getopt(SOL_SOCKET, SO_ERROR, (void*)&sret, &sretlen);
     if(ret == -1)  {  
-        FATAL("%s:%d, connection failed with errno: %d %s", __FILE__, __LINE__, errno, strerror(errno));  
+        FATAL_LOG("%s:%d, connection failed with errno: %d %s", __FILE__, __LINE__, errno, strerror(errno));  
         return false;  
     } else if(sret) {  
-        FATAL("%s:%d, connection failed with errno: %d %s", __FILE__, __LINE__, errno, strerror(errno));  
+        FATAL_LOG("%s:%d, connection failed with errno: %d %s", __FILE__, __LINE__, errno, strerror(errno));  
         return false;  
     }
     return true;
@@ -53,7 +53,7 @@ bool Socket::checkConnected() {
 int Socket::setopt(int level, int optname, void* optval, socklen_t len) {
     int ret = ::setsockopt(mSockfd, level, optname, optval, len);
     if (ret < 0) {
-        FATAL("setsockopt() failed, ret:%d socket[%d] level[%d] optname[%u] errno[%d] with %s", 
+        FATAL_LOG("setsockopt() failed, ret:%d socket[%d] level[%d] optname[%u] errno[%d] with %s", 
                 ret, mSockfd, level, optname, errno, strerror(errno));
     }
     return ret;
@@ -62,9 +62,9 @@ int Socket::setopt(int level, int optname, void* optval, socklen_t len) {
 int Socket::connect(const InetAddress& peerAddr) {
    const struct sockaddr_in& sockAddr = peerAddr.getSockAddrInet();
    int ret = ::connect(mSockfd, sockaddr_cast(&sockAddr), static_cast<socklen_t>(sizeof sockAddr));
-   DEBUG("socket[%d] connect to addr[%s]", mSockfd, peerAddr.toIpPort().c_str());
+   DEBUG_LOG("socket[%d] connect to addr[%s]", mSockfd, peerAddr.toIpPort().c_str());
    if ( mBlocking && ret < 0) {
-        FATAL("ret:%d bind socket[%d] raw_ip[%s] port[%u] Die errno[%d] with %s", 
+        FATAL_LOG("ret:%d bind socket[%d] raw_ip[%s] port[%u] Die errno[%d] with %s", 
                 ret, mSockfd, inet_ntoa(sockAddr.sin_addr), ntohs(sockAddr.sin_port), errno, strerror(errno));
    }
    return ret;
@@ -76,12 +76,12 @@ int Socket::bind(const InetAddress& addr)
     int ret = ::bind(mSockfd, sockaddr_cast(&sockAddr), static_cast<socklen_t>(sizeof sockAddr));
     if (ret < 0)
     {
-        FATAL("ret:%d bind socket[%d] raw_ip[%s] port[%u] Die errno[%d] with %s", 
+        FATAL_LOG("ret:%d bind socket[%d] raw_ip[%s] port[%u] Die errno[%d] with %s", 
                 ret, mSockfd, inet_ntoa(sockAddr.sin_addr), ntohs(sockAddr.sin_port), errno, strerror(errno));
         return ret;
     }
     setReuseAddr(true);
-    INFO("bind with socket[%d] raw_ip[%s] port[%u]", 
+    INFO_LOG("bind with socket[%d] raw_ip[%s] port[%u]", 
            mSockfd, inet_ntoa(sockAddr.sin_addr), ntohs(sockAddr.sin_port));
     return 0;
 }
@@ -90,7 +90,7 @@ int Socket::listen()
 {
     int ret = ::listen(mSockfd, 100);
     if (ret < 0) {
-        FATAL("listen  Die errno:%d with %s", errno, strerror(errno));
+        FATAL_LOG("listen  Die errno:%d with %s", errno, strerror(errno));
         return ret;
     }
     return 0;
@@ -124,10 +124,10 @@ int Socket::accept(int sockfd, struct sockaddr_in* addr)
             case ENOTSOCK:
             case EOPNOTSUPP:
                 // unexpected errors
-                FATAL("unexpected error of ::accept %d", savedErrno);
+                FATAL_LOG("unexpected error of ::accept %d", savedErrno);
                 break;
             default:
-                FATAL("unknown error of ::accept %d", savedErrno);
+                FATAL_LOG("unknown error of ::accept %d", savedErrno);
                 break;
         }
     }
@@ -163,7 +163,7 @@ void Socket::setReuseAddr(bool on)
     int ret = ::setsockopt(mSockfd, SOL_SOCKET, SO_REUSEADDR,
             &optval, static_cast<socklen_t>(sizeof optval));
     if (ret < 0) {
-        FATAL("SO_REUSEPORT failed.");
+        FATAL_LOG("SO_REUSEPORT failed.");
     }
 }
 
@@ -175,7 +175,7 @@ bool Socket::getPeerAddr(InetAddress& addr)
   socklen_t addrlen = static_cast<socklen_t>(sizeof peeraddr);
   if (::getpeername(mSockfd, sockaddr_cast(&peeraddr), &addrlen) < 0)
   {
-    FATAL("sockets::getPeerAddr failed");
+    FATAL_LOG("sockets::getPeerAddr failed");
     return false;
   }
   addr = InetAddress(peeraddr);
@@ -191,7 +191,7 @@ void Socket::setKeepAlive(bool on) {
 
 int Socket::send(const char* buf, size_t len) {
 write_again:
-    DEBUG("raw socket writing: %s", buf);
+    DEBUG_LOG("raw socket writing: %s", buf);
     int count = write(mSockfd, buf, len);
     if (count > 0) {
         return count;
@@ -202,7 +202,7 @@ write_again:
         case EAGAIN:
             break;
         default:
-            FATAL("write return %d with errno[%d][%s], this socket is disconnected", count, errno, strerror(errno));
+            FATAL_LOG("write return %d with errno[%d][%s], this socket is disconnected", count, errno, strerror(errno));
     };
     return count;
 }
@@ -222,7 +222,7 @@ read_again:
         case EAGAIN:
             break;
         default:
-            FATAL("read return %ld with errno[%d][%s], this socket is disconnected", count, errno, strerror(errno));
+            FATAL_LOG("read return %ld with errno[%d][%s], this socket is disconnected", count, errno, strerror(errno));
     };
     return count;
 }

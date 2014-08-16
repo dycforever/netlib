@@ -8,8 +8,8 @@
 #include <arpa/inet.h>
 #include <errno.h>
 
-#include "util.h"
-#include "log.h"
+#include "netutils/netutils.h"
+#include "netutils/Log.h"
 
 namespace dyc
 {

@@ -40,7 +40,7 @@
 
 #include <sys/types.h>          /* See NOTES */
 
-#include "log.h"
+#include "Log.h"
 
 
 namespace dyc {
@@ -84,7 +84,7 @@ inline int createICMPSocket()
   int sockfd = ::socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
   if (sockfd < 0)
   {
-    FATAL("createDGramSocket failed, errno:%d with %s", errno, strerror(errno));
+    FATAL_LOG("createDGramSocket failed, errno:%d with %s", errno, strerror(errno));
     return -1;
   }
 
@@ -97,7 +97,7 @@ inline int createDGramSocket()
   int sockfd = ::socket(AF_INET, SOCK_DGRAM, 0);
   if (sockfd < 0)
   {
-    FATAL("createDGramSocket failed, errno:%d with %s", errno, strerror(errno));
+    FATAL_LOG("createDGramSocket failed, errno:%d with %s", errno, strerror(errno));
     return -1;
   }
 
@@ -112,7 +112,7 @@ inline void fromIpPort(const char* ip, uint16_t port,
   addr->sin_port = port;
   if (::inet_pton(AF_INET, ip, &addr->sin_addr) <= 0)
   {
-    FATAL("fromIpPort failed");
+    FATAL_LOG("fromIpPort failed");
   }
 }
 

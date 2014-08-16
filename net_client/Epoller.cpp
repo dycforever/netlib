@@ -53,7 +53,7 @@ int Epoller::createEpoll() {
     if (sock < 0) {
         return sock;
     }
-    DEBUG("create epoll socket[%d]", sock);
+    DEBUG_LOG("create epoll socket[%d]", sock);
     _epoll_socket = sock;
 
     return 0;
@@ -62,10 +62,10 @@ int Epoller::createEpoll() {
 int Epoller::_removeEvent(ChannelPtr channel) {
     int sockfd = channel->fd();
     int epsfd = _epoll_socket;
-    DEBUG("del port in epoll %d", epsfd);
+    DEBUG_LOG("del port in epoll %d", epsfd);
     int ret = epoll_ctl(_epoll_socket, EPOLL_CTL_DEL, sockfd, NULL);
     if( ret < 0 ){
-        FATAL("remove channel:%d from epoll fd:%d failed", sockfd, epsfd);
+        FATAL_LOG("remove channel:%d from epoll fd:%d failed", sockfd, epsfd);
         return -1;
     }
     return 0;
@@ -81,10 +81,10 @@ int Epoller::addEvent(ChannelPtr channel, uint32_t op_types) {
 
     int epsfd = _epoll_socket;
     const char* ev = (op_types==EPOLLIN) ? "epoll_in" : "epoll_out";
-    DEBUG("add socket[%d] event[%s] in epoll socket[%d]", sockfd, ev, epsfd);
+    DEBUG_LOG("add socket[%d] event[%s] in epoll socket[%d]", sockfd, ev, epsfd);
     int ret = epoll_ctl(_epoll_socket, EPOLL_CTL_ADD, sockfd, &event);
     if( ret < 0 ){
-        FATAL("add channel:%d into epoll fd:%d failed errno:%d %s", sockfd, epsfd, errno, strerror(errno));
+        FATAL_LOG("add channel:%d into epoll fd:%d failed errno:%d %s", sockfd, epsfd, errno, strerror(errno));
         return -1;
     }
     return 0;
@@ -100,7 +100,7 @@ int Epoller::poll(Event* list) {
         case EAGAIN:
             return 0;
         default:
-            WARN("epoll_wait return %d with errno[%d]: %s", ret, errno, strerror(errno));
+            WARN_LOG("epoll_wait return %d with errno[%d]: %s", ret, errno, strerror(errno));
             ret = -1;
     };
     return ret;
@@ -111,10 +111,10 @@ int Epoller::updateEvent(ChannelPtr channel) {
     int sockfd = channel->fd();
     event.data.ptr = (void*)channel;
     event.events = channel->getEvents();
-    DEBUG("channel[%d] update event[%d] in epoll", sockfd, channel->getEvents());
+    DEBUG_LOG("channel[%d] update event[%d] in epoll", sockfd, channel->getEvents());
     int ret = epoll_ctl(_epoll_socket, EPOLL_CTL_MOD, sockfd, &event);
     if( ret < 0 ){
-        FATAL("ctl channel:%d into epoll fd:%d failed errno:%d %s", sockfd, _epoll_socket, errno, strerror(errno));
+        FATAL_LOG("ctl channel:%d into epoll fd:%d failed errno:%d %s", sockfd, _epoll_socket, errno, strerror(errno));
         return -1;
     }
     return 0;

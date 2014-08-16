@@ -7,9 +7,9 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
 
+#include "thread/ThreadLock.h"
+
 #include "InetAddress.h"
-#include "Mutex.h"
-#include "SpinLock.h"
 #include "Socket.h"
 #include "Buffer.h"
 #include "Channel.h"
@@ -82,11 +82,7 @@ private:
     size_t mSendBySocket;
     
     SpinLock mLock;
-<<<<<<< HEAD
-    Buffer getSendBuffer();
-=======
     Buffer* getSendBuffer();
->>>>>>> 4646e00098d7f4b437a8079599f3a91e25afd086
 };
 
 }

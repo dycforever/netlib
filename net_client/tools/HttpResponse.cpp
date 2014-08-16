@@ -3,9 +3,10 @@
 #include <iostream>
 #include <algorithm>
 
-#include "HttpResponse.h"
-#include "Tokenizer.h"
-#include "util.h"
+#include "tools/HttpResponse.h"
+
+#include "netutils/Tokenizer.h"
+#include "netutils/netutils.h"
 
 #include "zlib.h"
 
@@ -35,7 +36,7 @@ std::string decode(const char* data, size_t size)
     strm.next_in = Z_NULL;
     ret = inflateInit2(&strm, 32+15);
     if (ret != Z_OK) {
-        FATAL("inflateInit2 failed");
+        FATAL_LOG("inflateInit2 failed");
         return "";
     }
 
@@ -49,21 +50,21 @@ std::string decode(const char* data, size_t size)
         assert(ret != Z_STREAM_ERROR);  /* state not clobbered */
         switch (ret) {
             case Z_NEED_DICT:
-                FATAL("inflate return Z_NEED_DICT");
+                FATAL_LOG("inflate return Z_NEED_DICT");
                 ret = Z_DATA_ERROR;     /* and fall through */
             case Z_DATA_ERROR:
-                FATAL("inflate return Z_DATA_ERROR" );
+                FATAL_LOG("inflate return Z_DATA_ERROR" );
             case Z_MEM_ERROR:
-                FATAL("inflate return Z_MEM_ERROR");
+                FATAL_LOG("inflate return Z_MEM_ERROR");
                 (void)inflateEnd(&strm);
-                FATAL("inflate failed");
+                FATAL_LOG("inflate failed");
                 return "";
         }
         have = size- strm.avail_out;
         res.append((const char*)out, have);
     } while (ret != Z_STREAM_END && strm.avail_in != 0);
     (void)inflateEnd(&strm);
-    INFO("decode %lu bytes", size);
+    INFO_LOG("decode %lu bytes", size);
     delete[] out;
     return res;
 }
@@ -219,7 +220,7 @@ ParseRet HttpResponse::parseChunk(std::string& b) {
         }
         std::string chunkSizeStr(token.c_str(), chunkExt);
         int size = strtosize(chunkSizeStr);
-        DEBUG("get a chunk Size: %d", size);
+        DEBUG_LOG("get a chunk Size: %d", size);
         if (size == 0) {
             ret = DONE;
             break;
@@ -244,7 +245,7 @@ ParseRet HttpResponse::parseChunk(std::string& b) {
 }
 
 ParseRet HttpResponse::setBody(std::string& b) {
-    DEBUG("body size: %lu", b.size() );
+    DEBUG_LOG("body size: %lu", b.size() );
     ParseRet ret = DONE;
     mBody = b;
     if (mChunked) {

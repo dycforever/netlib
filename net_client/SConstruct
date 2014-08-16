@@ -13,14 +13,11 @@ libsname=[
      'pthread'
 ]
 
-include_dir = [ '/home/dyc/github/program/netlib/net_client',
-                '/home/dyc/github/program/netlib/net_client/utils',
-                '/home/dyc/github/program/netlib/net_client/tools',
+include_dir = [ '/home/dyc/github/netlib/net_client',
                 '/home/dyc/tools/zlib/include', 
                 '/home/dyc/tools/log4c/include', 
-                '/home/dyc/github/program/common', 
-                '/home/dyc/github/program/common/thread', 
-                '/home/dyc/github/program/common/utils']
+                '/home/dyc/github/program/common'
+                ]
 
 
 

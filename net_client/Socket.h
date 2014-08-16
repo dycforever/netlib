@@ -3,6 +3,7 @@
 #include <netinet/ip_icmp.h>
 
 #include "common.h"
+#include "netutils/Log.h"
 
 #ifndef __SOCKET_H__
 #define __SOCKET_H__
@@ -19,19 +20,19 @@ public:
     void createSocket() {
         mSockfd = ::socket(AF_INET, SOCK_STREAM, 0);
         if (mSockfd < 0) {
-            FATAL("createNonblock failed, errno:%d with %s", errno, strerror(errno));
+            FATAL_LOG("createNonblock failed, errno:%d with %s", errno, strerror(errno));
         }
     }
 
     void setNonblocking() {
         int opts = fcntl(mSockfd, F_GETFL);
         if (opts < 0) {
-            FATAL("Executing fcntl function(getting flags) failed.  errno:%d with %s", errno, strerror(errno));
+            FATAL_LOG("Executing fcntl function(getting flags) failed.  errno:%d with %s", errno, strerror(errno));
         }
 
         opts = opts | O_NONBLOCK;
         if (fcntl(mSockfd, F_SETFL, opts) < 0 ) {
-            FATAL("Executing fcntl function(setting flags) failed.  errno:%d with %s", errno, strerror(errno));
+            FATAL_LOG("Executing fcntl function(setting flags) failed.  errno:%d with %s", errno, strerror(errno));
         }
     }
 
