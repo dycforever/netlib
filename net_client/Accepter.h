@@ -12,6 +12,7 @@ public:
     typedef boost::function<Connection* (Socket*)> NewConnCallback;
     typedef Socket* SocketPtr;
     Accepter(SocketPtr sock):mSocket(sock) {}
+    virtual ~Accepter() {}
 
     int accepter() {
         InetAddress addr;

@@ -34,7 +34,7 @@ void* Client::thr_fn(void* data) {
 }
 
 int64_t Client::send(const char* data, int64_t size) {
-    Buffer* buffer = new Buffer(data, (size_t)size, true);
+    Buffer* buffer = new Buffer(data, (size_t)size);
     buffer->setMesgId(mMesgId);
     DelayFunctor func = boost::bind(&Connection::addBufferToSendQueue, mConnection, buffer);
     ++mMesgId;

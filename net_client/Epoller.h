@@ -28,6 +28,8 @@ public:
     int updateEvent(ChannelPtr);
     int poll(Event*);
 
+    std::string eventsToStr(uint32_t);
+
     static const int EPOLL_MAX_LISTEN_NUMBER=500;
 
 private:

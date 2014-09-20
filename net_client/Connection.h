@@ -22,7 +22,7 @@ class EventLoop;
 class Connection : public Channel {
 private:
     static int defaultWriteCallback(Buffer*) {}
-    static int defaultConnCallback() {}
+    static int defaultConnCallback(bool) {}
     static int defaultReadCallback(Buffer*, Buffer*) {}
 
 public:
@@ -31,10 +31,11 @@ public:
 //    typedef Buffer* BufferPtr;
 
     typedef boost::function< int (Buffer*, Buffer*) > ReadCallbackFunc;
-    typedef boost::function< int () > ConnCallbackFunc;
+    typedef boost::function< int (bool) > ConnCallbackFunc;
     typedef boost::function< int (Buffer*) > WriteCallbackFunc;
 
     explicit Connection(SocketPtr, EventLoop*);
+    virtual ~Connection();
 
     int getEvents() { return mEvents;}
     void setEvents(int events) { mEvents = events;}
@@ -45,19 +46,21 @@ public:
     void setWriteCallback(WriteCallbackFunc cb) { mWriteCallback = cb;}
 
     int handle(const epoll_event& event);
+    int handleRead(const epoll_event& event);
+    int handleConnect(const epoll_event& event);
+    int handleWrite(const epoll_event& event);
 
     bool isConnected() {return mConnected;}
     bool setConnected(bool stat) {return mConnected=stat;}
-
     void enableRead();
     void disableRead();
     void enableWrite();
     void disableWrite();
 
     long readSocket();
-    int writeSocket();
-    long _writeSocket(Buffer* buffer);
+    long writeSocket(Buffer* buffer);
 
+    size_t getSendBufferCount ();
     void addBufferToSendQueue(const char* data, size_t size);
     void addBufferToSendQueue(Buffer*);
     int64_t takeOffBuffer();
@@ -67,7 +70,6 @@ private:
     InetAddress peerAddr;
     bool mConnected;
     SocketPtr mSocket;
-//    boost::shared_ptr<EventLoop> mLoop;
     EventLoop* mLoop;
 
     WriteCallbackFunc mWriteCallback;

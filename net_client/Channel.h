@@ -8,6 +8,7 @@ namespace dyc {
 
 class Channel {
 public:
+    virtual ~Channel(){};
 
     static const int CONN_REMOVE = -1;
     static const int CONN_CONTINUE = 0;

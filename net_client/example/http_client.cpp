@@ -2,14 +2,14 @@
 #include "Socket.h"
 #include "InetAddress.h"
 #include "EventLoop.h"
-#include "tools/HttpRequest.h"
-#include "tools/HttpResponse.h"
-#include "tools/HttpResponseParser.h"
+#include "http_client/HttpRequest.h"
+#include "http_client/HttpResponse.h"
+#include "http_client/HttpResponseParser.h"
 #include "Client.h"
 #include "netutils/Tokenizer.h"
 
 #include <boost/bind.hpp>
-
+#include <string>
 #include <fstream>
 
 using namespace dyc;
@@ -17,10 +17,10 @@ using namespace dyc;
 // global options:
 std::string version = "HTTP/1.1";
 std::string ae = "gzip";
-std::string url = "/";
-std::string ip = "127.0.0.1";
+std::string url = "/s?q=qq";
+std::string ip = "42.120.169.24";
 std::string port = "80";
-std::string host = "localhost";
+std::string host = "m.sp.sm.cn";
 
 int parseArg(int argc, char** argv) {
     int c;
@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
 
     HttpResponseParser parser;
     boost::function< int (Buffer*, Buffer*) > readfunc = boost::bind(&HttpResponseParser::readData, &parser, _1, _2);
-    boost::function< int () > connfunc = boost::bind(&HttpResponseParser::conn, &parser);
+    boost::function< int (bool) > connfunc = boost::bind(&HttpResponseParser::conn, &parser, _1);
 
     client.setReadCallback(readfunc);
     client.setConnCallback(connfunc);
@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
     client.send(req.toString());
     parser.wait();
 
-    parser.dump();
+    parser.getResponse().dump();
     return 0;
 }
 

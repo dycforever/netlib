@@ -3,7 +3,7 @@
 #include <iostream>
 #include <algorithm>
 
-#include "tools/HttpResponse.h"
+#include "http_client/HttpResponse.h"
 
 #include "netutils/Tokenizer.h"
 #include "netutils/netutils.h"
@@ -11,6 +11,18 @@
 #include "zlib.h"
 
 namespace dyc {
+
+HttpResponse::HttpResponse() :
+    mBodyBuf(""), 
+    mChunked(false), 
+    mGzip(false), 
+    mContentLength(0),
+    mRestContentLength(0),
+    mStatusCode(""), 
+    mDesc(""), 
+    mVersion("") {
+    mStr.reserve(512);
+}
 
 void printHeader(const unsigned char* buf, size_t size, const std::string& pref) {
         std::cout << pref << ": " << (void*) buf 
@@ -92,40 +104,39 @@ size_t HttpResponse::isChunked() {
     }
 }
 
-void HttpResponse::dealChunk(const std::string& chunk, const std::string& ret, std::string& str) {
+void HttpResponse::decodeChunk(const std::string& chunk, const std::string& contentType, std::string& str) {
     char* header = const_cast<char*>(chunk.c_str());
     assert(header != NULL);
-    if (ret == "gzip" || ret == "gz2") {
+    if (contentType == "gzip" || contentType == "gz2") {
         std::string gztxt = decode(header, chunk.size());
-        str.append("\n" + ret + " content: \n");// .append(gztxt);
+        str.append("\n" + contentType + " content: \n").append(gztxt);
     } else {
-        str.append("\n" + ret + " content: \n");// .append(chunk);
+        str.append("\n" + contentType + " content: \n").append(chunk);
     }
 }
-
 
 std::string HttpResponse::bodyToString() {
     std::string retStr;
     if (mChunked && mChunks.size() > 0) {
         char* header = const_cast<char*>(mChunks[0].c_str());
-        std::string ret = judgeHeader(header, mChunks[0].size());
+        std::string contentType = judgeHeader(header, mChunks[0].size());
         std::string totalChunk;
         for (int i=0; i<mChunks.size(); ++i) {
             totalChunk += mChunks[i];
             // FIXME
-//            dealChunk(mChunks[i], ret, retStr);
+//            decodeChunk(mChunks[i], contentType, retStr);
         }
         std::string txt;
         if (mGzip) {
             txt = decode(totalChunk.c_str(), totalChunk.size());
-            retStr.append("\n" + ret + " content: \n");// .append(txt);
+            retStr.append("\n" + contentType + " content: \n").append(txt);
         } else {
-            retStr.append("\n" + ret + " content: \n");// .append(totalChunk);
+            retStr.append("\n" + contentType + " content: \n").append(totalChunk);
         }
     } else { // not chunk
-        char* header = const_cast<char*>(mBody.c_str());
-        std::string ret = judgeHeader(header, mBody.size());
-        dealChunk(mBody, ret, retStr);
+        char* header = const_cast<char*>(mBodyBuf.c_str());
+        std::string contentType = judgeHeader(header, mBodyBuf.size());
+        decodeChunk(mBodyBuf, contentType, retStr);
     }
     return retStr;
 }
@@ -156,6 +167,7 @@ void HttpResponse::setHeader(const std::string& k, const std::string& v) {
     }
     if (key == "content-length") {
         mContentLength = atoi(lv.c_str());
+        mRestContentLength = mContentLength;
     }
 }
 
@@ -205,13 +217,14 @@ int HttpResponse::strtosize(const std::string& str) {
 ParseRet HttpResponse::parseChunk(std::string& b) {
     size_t start = 0;
     std::string token;
-    ParseRet ret = WAIT;
+    ParseRet ret = PARSE_WAIT;
     while(1) {
         size_t ostart = start;
         start = getToken(b, start, token, "\r\n");
         if (start == std::string::npos) {
 //            WARN("not enough chunk size");
             b = b.substr(ostart, b.size()-ostart);
+            ret = PARSE_WAIT;
             break;
         }
         size_t chunkExt = token.find(";");
@@ -220,21 +233,20 @@ ParseRet HttpResponse::parseChunk(std::string& b) {
         }
         std::string chunkSizeStr(token.c_str(), chunkExt);
         int size = strtosize(chunkSizeStr);
-        DEBUG_LOG("get a chunk Size: %d", size);
+        DEBUG_LOG("get a chunk Size: %s", chunkSizeStr.c_str());
         if (size == 0) {
-            ret = DONE;
+            ret = PARSE_DONE;
             break;
         } else if (size < 0) {
-//            std::cout << "token: " << token << " size : " << token.size()<< std::endl;
-//            std::cout << "start: " << start << " char: " << token[start]<< std::endl;
             b = b.substr(ostart, b.size()-ostart);
-            ret = WAIT;
+            ret = PARSE_ERROR;
             break;
         }
         size_t chunkSize = size;
         if (b.begin()+start+chunkSize >= b.end()) {
 //            WARN("not enough chunk");
             b = b.substr(ostart, b.size()-ostart);
+            ret = PARSE_WAIT;
             break;
         }
         std::string chunk(b.begin()+start, b.begin()+start+chunkSize);
@@ -244,18 +256,37 @@ ParseRet HttpResponse::parseChunk(std::string& b) {
     return ret;
 }
 
-ParseRet HttpResponse::setBody(std::string& b) {
-    DEBUG_LOG("body size: %lu", b.size() );
-    ParseRet ret = DONE;
-    mBody = b;
+ParseRet HttpResponse::appendBody(const std::string& block) {
+    DEBUG_LOG("append body size: %lu, mChunked: %d", block.size(), (int)mChunked);
+    ParseRet ret = PARSE_DONE;
+    mBodyBuf.append(block);
     if (mChunked) {
-        ret = parseChunk(b);
-        mBody = b;
+        ret = parseChunk(mBodyBuf);
     } else {
-        // TODO content length
-        return WAIT;
+        if (mRestContentLength <= block.size()) {
+            mRestContentLength = 0;
+            return PARSE_DONE;
+        }
+        mRestContentLength -= block.size();
+        return PARSE_WAIT;
     }
     return ret;
+}
+
+void HttpResponse::dump(const std::string& filename) {
+    std::ofstream out(filename.c_str());
+    out << "chunk: " << isChunked() << std::endl
+        << "content-encoding: " << getContentEncoding() << std::endl
+        << "status code: " << getStatusCode() << std::endl
+        << bodyToString() << std::endl;
+    out.close();
+}
+
+void HttpResponse::dump() {
+    std::cout << "chunk: " << isChunked() << std::endl
+        << "content-encoding: " << getContentEncoding() << std::endl
+        << "status code: " << getStatusCode() << std::endl
+        << bodyToString() << std::endl;
 }
 
 }

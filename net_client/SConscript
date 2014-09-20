@@ -11,7 +11,7 @@ if int(debug):
 
 
 netlib_sources = [str(fn) for fn in Glob('*.cpp') if str(fn) not in ['main.cpp']]
-netlib_sources += [str(fn) for fn in Glob('tools/*.cpp') if str(fn) not in ['main.cpp']]
+netlib_sources += [str(fn) for fn in Glob('http_client/*.cpp') if str(fn) not in ['main.cpp']]
 netlib_sources += [str(fn) for fn in Glob('netutils/*.cpp') if str(fn) not in ['main.cpp']]
 
 env.Library(target = 'netlib',

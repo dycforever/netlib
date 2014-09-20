@@ -3,8 +3,8 @@
 
 namespace dyc {
 
-Epoller::Epoller() {
-    _timeout = 1000;
+Epoller::Epoller() : _timeout(-1) {
+//    _timeout = 1000;
 }
 
 
@@ -106,12 +106,24 @@ int Epoller::poll(Event* list) {
     return ret;
 }
 
+std::string Epoller::eventsToStr(uint32_t event)
+{
+    std::string str;
+    if (event & EPOLLIN) {
+        str += "EPOLLIN";
+    }
+    if (event & EPOLLOUT) {
+        str += "|EPOLLOUT";
+    }
+    return str;
+}
+
 int Epoller::updateEvent(ChannelPtr channel) {
     struct epoll_event event;
     int sockfd = channel->fd();
     event.data.ptr = (void*)channel;
     event.events = channel->getEvents();
-    DEBUG_LOG("channel[%d] update event[%d] in epoll", sockfd, channel->getEvents());
+    DEBUG_LOG("channel[%d] update event[%s] in epoll", sockfd, eventsToStr(event.events).c_str());
     int ret = epoll_ctl(_epoll_socket, EPOLL_CTL_MOD, sockfd, &event);
     if( ret < 0 ){
         FATAL_LOG("ctl channel:%d into epoll fd:%d failed errno:%d %s", sockfd, _epoll_socket, errno, strerror(errno));

@@ -6,7 +6,7 @@
 #include "thread/Condition.h"
 
 #include "Buffer.h"
-#include "tools/HttpResponse.h"
+#include "http_client/HttpResponse.h"
 #include "netutils/Tokenizer.h"
 #include "netutils/Log.h"
 
@@ -16,28 +16,28 @@ class HttpResponseParser {
 private:
     enum ParsePhase {LINE, HEADER, BODY};
 public:
-    HttpResponseParser():mResponse(""), mHasRead(0), mHasParsed(0), mCond(mLock), mPhase(LINE)
+    HttpResponseParser():mResponseBuf(""), mHasRead(0), mHasParsed(0), mCond(mLock), mPhase(LINE)
 {
     mTest = false;
 }
 
-    ParseRet parseRespLine(std::string line);
-    ParseRet parseRespHeader(std::string line);
-    int parse(std::string resp, bool isFinish);
+    ParseRet parseRespLine(const std::string& line);
+    ParseRet parseRespHeader(const std::string& line);
+    int parse(const std::string& resp, bool isFinish);
     int readData(Buffer* buffer, Buffer*);
-    int conn();
+    int conn(bool);
     std::string out();
-    void dump(const std::string& filename) ;
-    void dump();
+    HttpResponse& getResponse();
+
     void wait();
 
 private:
-    std::string mResponse;
+    std::string mResponseBuf;
     int mHasParsed;
     size_t mHasRead;
     MutexLock mLock;
     Condition mCond;
-    HttpResponse mResp;
+    HttpResponse mResponseObj;
     ParsePhase mPhase;
 
     bool mTest;

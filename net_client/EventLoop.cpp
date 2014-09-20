@@ -93,9 +93,17 @@ void EventLoop::queueInLoop(const DelayFunctor& cb) {
 }
 
 void EventLoop::callPendingFunctors() {
-    LockGuard<MutexLock> lock(mLock);
+    std::vector<DelayFunctor> functors;
+    {
+        LockGuard<MutexLock> lock(mLock);
+        if (_waitQueue.size() == 0) {
+            return;
+        }
+        functors.swap(_waitQueue);
+    }
+    DEBUG_LOG("calling PendingFunctors: %lu", functors.size());
     std::vector<DelayFunctor>::iterator iter;
-    for (iter = _waitQueue.begin(); iter != _waitQueue.end(); ++iter) {
+    for (iter = functors.begin(); iter != functors.end(); ++iter) {
         (*iter)();
     }
 }

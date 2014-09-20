@@ -63,11 +63,14 @@ int Socket::connect(const InetAddress& peerAddr) {
    const struct sockaddr_in& sockAddr = peerAddr.getSockAddrInet();
    int ret = ::connect(mSockfd, sockaddr_cast(&sockAddr), static_cast<socklen_t>(sizeof sockAddr));
    DEBUG_LOG("socket[%d] connect to addr[%s]", mSockfd, peerAddr.toIpPort().c_str());
-   if ( mBlocking && ret < 0) {
+   if ((mBlocking && ret < 0) || 
+           (!mBlocking && ret < 0 && errno != EINPROGRESS)) {
         FATAL_LOG("ret:%d bind socket[%d] raw_ip[%s] port[%u] Die errno[%d] with %s", 
                 ret, mSockfd, inet_ntoa(sockAddr.sin_addr), ntohs(sockAddr.sin_port), errno, strerror(errno));
+        return ret;
    }
-   return ret;
+
+   return 0;
 }
 
 int Socket::bind(const InetAddress& addr)
@@ -202,7 +205,8 @@ write_again:
         case EAGAIN:
             break;
         default:
-            FATAL_LOG("write return %d with errno[%d][%s], this socket is disconnected", count, errno, strerror(errno));
+            FATAL_LOG("write socket fd[%d] from[%p] return %d with errno[%d][%s], this socket is disconnected", 
+                    mSockfd, buf, count, errno, strerror(errno));
     };
     return count;
 }
@@ -222,7 +226,8 @@ read_again:
         case EAGAIN:
             break;
         default:
-            FATAL_LOG("read return %ld with errno[%d][%s], this socket is disconnected", count, errno, strerror(errno));
+            FATAL_LOG("read socket fd[%d] to[%p] return %ld with errno[%d][%s], this socket is disconnected", 
+                    mSockfd, buf, count, errno, strerror(errno));
     };
     return count;
 }
