@@ -203,7 +203,7 @@ void Socket::setKeepAlive(bool on) {
 
 void Socket::setLinger(bool on, int timeout) {
     int optval = on ? 1 : 0;
-    struct linger lingerVal = {on, timeout};
+    struct linger lingerVal = {optval, timeout};
     ::setsockopt(mSockfd, SOL_SOCKET, SO_LINGER, (char *) &lingerVal, sizeof(lingerVal));
 }
 

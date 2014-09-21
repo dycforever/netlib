@@ -12,9 +12,8 @@ int main(int argc, char** argv) {
         port = atoi(argv[2]);
     }
     InetAddress addr(addrStr, port);
-    Socket socket(true);
-//    socket.setLinger(true, 0);
-    socket.setNonblocking();
+    Socket socket(false);
+    socket.setLinger(true, 1);
     std::cout << " connect: " << socket.connect(addr) << std::endl;
     while(!socket.checkConnected()){}
 
@@ -24,8 +23,8 @@ int main(int argc, char** argv) {
 
     int ret = -1;
     size_t sendBytes = 0;
-    while ((ret = socket.send("1", 1)) == 1) {
-        ++sendBytes;
+    while ((ret = socket.send("1234567890", 10)) > 0) {
+        sendBytes += ret;
     }
     
     if (ret == 0) {
