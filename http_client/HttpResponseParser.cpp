@@ -35,9 +35,7 @@ ParseRet HttpResponseParser::parseRespLine(const std::string& line) {
     } else {
         return PARSE_WAIT;
     }
-
     return PARSE_DONE;
-
 }
 
 ParseRet HttpResponseParser::parseRespHeader(const std::string& line) {
@@ -70,8 +68,6 @@ int HttpResponseParser::parse(const std::string& resp, bool isFinish) {
         ret = parseRespLine(token);
         if (ret == PARSE_DONE) {
             mPhase = HEADER;
-//            mResponseBuf = mResponseBuf.substr(start, mResponseBuf.size()-start);
-//            start = 0;
         } else {
             INFO_LOG("parse response line return WATI");
             return PARSE_WAIT;
@@ -89,9 +85,7 @@ int HttpResponseParser::parse(const std::string& resp, bool isFinish) {
         }
         DEBUG_LOG("header line: %s", token.c_str());
         if (token == "") {
-//            mResponseBuf = mResponseBuf.substr(start, mResponseBuf.size()-start);
             mPhase = BODY;
-//            start = 0;
             break;
         }
         ret = parseRespHeader(token);

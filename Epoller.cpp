@@ -13,16 +13,16 @@ void Epoller::setTimeout(int t) {
 }
 
 int Epoller::addRead(ChannelPtr channel) {
-    lock();
+//    lock();
     int ret = addEvent(channel, EPOLLIN);
-    unlock();
+//    unlock();
     return ret;
 }
 
 int Epoller::addWrite(ChannelPtr channel) {
-    lock();
+//    lock();
     int ret = addEvent(channel, EPOLLOUT);
-    unlock();
+//    unlock();
     return ret;
 }
 
@@ -33,9 +33,9 @@ int Epoller::addRW(ChannelPtr channel) {
 }
 
 int Epoller::removeEvent(ChannelPtr channel) {
-    lock();
+//    lock();
     int ret = _removeEvent(channel);
-    unlock();
+//    unlock();
     return ret;
 }
 
@@ -68,6 +68,7 @@ int Epoller::_removeEvent(ChannelPtr channel) {
         FATAL_LOG("remove channel:%d from epoll fd:%d failed", sockfd, epsfd);
         return -1;
     }
+    DELETE(channel);
     return 0;
 }
 

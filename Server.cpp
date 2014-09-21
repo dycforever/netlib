@@ -5,12 +5,30 @@
 namespace dyc {
 
 Server::Server(const InetAddress& listenAddr):
+    mEpoller(NULL),
+    mListenSocket(NULL),
+    mLoop(NULL),
     mListenAddr(listenAddr) {
-        mEpoller = NEW Epoller();
+        mWriteCallback = boost::bind(&defaultWriteCallback, _1);
+        mReadCallback = boost::bind(&defaultReadCallback, _1, _2);
     }
-Server::~Server() {}
 
- 
+Server::Server(uint16_t port):
+    mEpoller(NULL),
+    mListenSocket(NULL),
+    mLoop(NULL),
+    mListenAddr("0.0.0.0", port) {
+        mWriteCallback = boost::bind(&defaultWriteCallback, _1);
+        mReadCallback = boost::bind(&defaultReadCallback, _1, _2);
+    }
+
+Server::~Server() {
+    DELETE(mLoop);
+    DELETE(mAccepter);
+    DELETE(mListenSocket);
+    DELETE(mEpoller);
+}
+
 Connection* Server::newConnection(Socket* socket) {
     Connection* conn = NEW Connection(socket, mLoop);
     conn->setReadCallback(mReadCallback);
@@ -19,23 +37,15 @@ Connection* Server::newConnection(Socket* socket) {
     mEpoller->addRead(conn);
     return conn;
 }
-// 
-// Connection* Server::connect(const InetAddress& addr) {
-//     int sockfd = createBlockingSocket();
-//     Socket* socket = NEW Socket(sockfd);
-// 
-//     int ret = socket->connect(addr);
-//     assert(ret != -1);
-//     return newConnection(socket);
-// }
-// 
-// void Server::stop() {
-//     mLoop->quit();
-// }
-// 
+ 
+void Server::stop() {
+    mLoop->quit();
+}
+
 int Server::start() {
+    mEpoller = NEW Epoller();
     mListenSocket = NEW Socket(false);
-    assert(mListenSocket != NULL);
+    assert(mListenSocket != NULL && mEpoller != NULL);
 
     int ret = mListenSocket->bind(mListenAddr);
     assert(ret != -1);

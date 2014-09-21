@@ -14,7 +14,7 @@ public:
     Accepter(SocketPtr sock):mSocket(sock) {}
     virtual ~Accepter() {}
 
-    int accepter() {
+    int accept() {
         InetAddress addr;
         int newfd = mSocket->accept(addr);
         NOTICE_LOG("accept a new conn with addr:%s", addr.toIpPort().c_str());
@@ -40,7 +40,7 @@ public:
         int ret = CONN_CONTINUE;
         long readCount = 0;
         if (event.events & EPOLLIN)  {
-            ret = accepter();
+            ret = accept();
         } else {
             WARN_LOG("strange! listen socket found %d event", event.events);
         }

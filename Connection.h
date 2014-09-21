@@ -20,11 +20,6 @@ namespace dyc {
 class EventLoop;
 
 class Connection : public Channel {
-private:
-    static int defaultWriteCallback(Buffer*) {}
-    static int defaultConnCallback(bool) {}
-    static int defaultReadCallback(Buffer*, Buffer*) {}
-
 public:
 //    typedef boost::shared_ptr<Socket> SocketPtr;
     typedef Socket* SocketPtr;
@@ -64,6 +59,11 @@ public:
     void addBufferToSendQueue(const char* data, size_t size);
     void addBufferToSendQueue(Buffer*);
     int64_t takeOffBuffer();
+
+private:
+    static int defaultWriteCallback(Buffer*) { std::cout << "call Connection::defaultWriteCallback" << std::endl;}
+    static int defaultConnCallback(bool) { std::cout << "call Connection::defaultConnCallback" << std::endl;}
+    static int defaultReadCallback(Buffer*, Buffer*) { std::cout << "call Connection::defaultReadCallback" << std::endl;}
 
 private:
     InetAddress localAddr;

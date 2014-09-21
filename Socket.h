@@ -62,6 +62,8 @@ public:
     /// Enable/disable SO_KEEPALIVE
     void setKeepAlive(bool on);
 
+    void setLinger(bool on, int timeout);
+
     int send(const char* buf, size_t len);
     long recv(char* buf, size_t len);
 
@@ -73,6 +75,8 @@ public:
 
     ssize_t sendmsg(const struct ::msghdr *msg, int flags);
     ssize_t recvmsg(struct ::msghdr *msg, int flags);
+
+    int close();
 private:
     /// On success, returns a non-negative integer that is
     /// a descriptor for the accepted socket, which has been

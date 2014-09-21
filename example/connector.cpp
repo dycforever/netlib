@@ -2,7 +2,6 @@
 #include "Socket.h"
 #include "InetAddress.h"
 
-using namespace std;
 using namespace dyc;
 
 int main(int argc, char** argv) {
@@ -14,22 +13,37 @@ int main(int argc, char** argv) {
     }
     InetAddress addr(addrStr, port);
     Socket socket(true);
-    int ret = socket.connect(addr);
+//    socket.setLinger(true, 0);
+    socket.setNonblocking();
+    std::cout << " connect: " << socket.connect(addr) << std::endl;
+    while(!socket.checkConnected()){}
+
     InetAddress peerAddr;
     socket.getPeerAddr(peerAddr);
-    cout << ret << ": " << peerAddr.toIpPort() << endl;
+    std::cout << "peer addr: " << peerAddr.toIpPort() << std::endl;
 
-    char buf[1024] = "ping";
-    ret = socket.send(buf, 4);
-    if (ret != 4) {
-        std::cout << "send " << ret << "bytes" << std::endl;
+    int ret = -1;
+    size_t sendBytes = 0;
+    while ((ret = socket.send("1", 1)) == 1) {
+        ++sendBytes;
+    }
+    
+    if (ret == 0) {
+        std::cout << "connection close" << std::endl;
+        return 0;
+    } else if (ret < 0 && errno == EAGAIN) {
+        std::cout << "send bytes: " << sendBytes << std::endl;
+        getchar();
+        std::cout << "close(): " << socket.close();
+    } else {
+        std::cout << "connection close with:" << strerror(errno) << std::endl;
     }
 
-    ret = socket.recv(buf, 4);
-    if (ret != 4) {
-        std::cout << "recv " << ret << "bytes" << std::endl;
-    }
-    buf[4] = 0;
-    std::cout << "recv content: " << buf << std::endl;
+//    ret = socket.recv(buf, 4);
+//    if (ret != 4) {
+//        std::cout << "recv " << ret << "bytes" << std::endl;
+//    }
+//    buf[4] = 0;
+//    std::cout << "recv content: " << buf << std::endl;
 
 }

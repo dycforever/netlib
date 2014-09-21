@@ -17,13 +17,23 @@ ssize_t Socket::recvmsg(struct msghdr *msg, int flags) {
     return ::recvmsg(mSockfd, msg, flags);
 }
 
-Socket::~Socket()
-{
-    if (close(mSockfd) == 0) {
+int Socket::close() {
+    int ret = ::close(mSockfd);
+    if (ret == 0) {
         INFO_LOG("close %d success", mSockfd);
     } else {
         FATAL_LOG("close %d failed: %d %s", mSockfd, errno, strerror(errno));
     }
+    return ret;
+}
+
+Socket::~Socket()
+{
+//    if (::close(mSockfd) == 0) {
+//        INFO_LOG("close %d success", mSockfd);
+//    } else {
+//        FATAL_LOG("close %d failed: %d %s", mSockfd, errno, strerror(errno));
+//    }
 }
 
 int Socket::getopt(int level, int optname, void* optval, void* len) {
@@ -61,11 +71,11 @@ int Socket::setopt(int level, int optname, void* optval, socklen_t len) {
 
 int Socket::connect(const InetAddress& peerAddr) {
    const struct sockaddr_in& sockAddr = peerAddr.getSockAddrInet();
-   int ret = ::connect(mSockfd, sockaddr_cast(&sockAddr), static_cast<socklen_t>(sizeof sockAddr));
    DEBUG_LOG("socket[%d] connect to addr[%s]", mSockfd, peerAddr.toIpPort().c_str());
+   int ret = ::connect(mSockfd, sockaddr_cast(&sockAddr), static_cast<socklen_t>(sizeof sockAddr));
    if ((mBlocking && ret < 0) || 
            (!mBlocking && ret < 0 && errno != EINPROGRESS)) {
-        FATAL_LOG("ret:%d bind socket[%d] raw_ip[%s] port[%u] Die errno[%d] with %s", 
+        FATAL_LOG("ret:%d connect socket[%d] to raw_ip[%s] port[%u] Die errno[%d] with %s", 
                 ret, mSockfd, inet_ntoa(sockAddr.sin_addr), ntohs(sockAddr.sin_port), errno, strerror(errno));
         return ret;
    }
@@ -191,6 +201,11 @@ void Socket::setKeepAlive(bool on) {
             &optval, static_cast<socklen_t>(sizeof optval));
 }
 
+void Socket::setLinger(bool on, int timeout) {
+    int optval = on ? 1 : 0;
+    struct linger lingerVal = {on, timeout};
+    ::setsockopt(mSockfd, SOL_SOCKET, SO_LINGER, (char *) &lingerVal, sizeof(lingerVal));
+}
 
 int Socket::send(const char* buf, size_t len) {
 write_again:

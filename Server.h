@@ -30,6 +30,7 @@ public:
     typedef std::set<ConnectionPtr> ConnectionCollections;
 
     Server(const InetAddress& listenAddr);
+    Server(uint16_t port);
     ~Server();  
 
     int start();
@@ -45,14 +46,15 @@ public:
     void setWriteCallback(WriteCallbackFunc cb) { mWriteCallback = cb;}
 
 private:
+    static int defaultWriteCallback(Buffer*) { std::cout << "call Server::defaultWriteCallback" << std::endl;}
+    static int defaultReadCallback(Buffer*, Buffer*) { std::cout << "call Server::defaultReadCallback" << std::endl;}
+
+private:
     const InetAddress mListenAddr;
     Epoller*  mEpoller;
     Socket*  mListenSocket;
     EventLoop* mLoop; 
     Accepter* mAccepter;
-//    boost::shared_ptr<Epoller> mEpoller;
-//    boost::scoped_ptr<Socket> mListenSocket;
-//    boost::shared_ptr<EventLoop> mLoop;
 
     WriteCallbackFunc mWriteCallback;
     ReadCallbackFunc mReadCallback;
