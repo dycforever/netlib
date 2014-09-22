@@ -73,6 +73,7 @@ int Socket::connect(const InetAddress& peerAddr) {
 int Socket::bind(const InetAddress& addr)
 {
     struct sockaddr_in sockAddr = addr.getSockAddrInet();
+    setReuseAddr(true);
     int ret = ::bind(mSockfd, sockaddr_cast(&sockAddr), static_cast<socklen_t>(sizeof sockAddr));
     if (ret < 0)
     {
@@ -80,7 +81,6 @@ int Socket::bind(const InetAddress& addr)
                 ret, mSockfd, inet_ntoa(sockAddr.sin_addr), ntohs(sockAddr.sin_port), errno, strerror(errno));
         return ret;
     }
-    setReuseAddr(true);
     INFO_LOG("bind with socket[%d] raw_ip[%s] port[%u]", 
            mSockfd, inet_ntoa(sockAddr.sin_addr), ntohs(sockAddr.sin_port));
     return 0;
