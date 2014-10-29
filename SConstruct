@@ -2,6 +2,7 @@
 
 import os
 import getpass
+homedir = os.path.expanduser("~")
 user=getpass.getuser()
 
 num_cpu=4
@@ -13,10 +14,10 @@ libsname=[
      'pthread'
 ]
 
-include_dir = [ '/home/dyc/github/netlib/',
-                '/home/dyc/tools/zlib/include', 
-                '/home/dyc/tools/log4c/include', 
-                '/home/dyc/github/program/common'
+include_dir = [ homedir + '/github/netlib/',
+                homedir + '/tools/zlib/include', 
+                homedir + '/tools/log4c/include', 
+                homedir + '/github/program/common'
                 ]
 
 

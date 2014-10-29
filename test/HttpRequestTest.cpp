@@ -4,6 +4,7 @@
 #include "HttpRequest.h"
 
 using namespace std;
+using namespace dyc;
 
 int main () {
     HttpRequest req;

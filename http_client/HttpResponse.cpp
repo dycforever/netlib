@@ -228,7 +228,7 @@ ParseRet HttpResponse::parseChunk(std::string& b) {
         start = getToken(b, start, token, "\r\n");
         if (start == std::string::npos) {
 //            WARN("not enough chunk size");
-//            b = b.substr(ostart, b.size()-ostart);
+            b = b.substr(ostart, b.size()-ostart);
             ret = PARSE_WAIT;
             std::cerr << "xx 1" << std::endl;
             break;
@@ -248,7 +248,7 @@ ParseRet HttpResponse::parseChunk(std::string& b) {
             std::cerr << "xx 2" << std::endl;
             break;
         } else if (size < 0) {
-            b = b.substr(ostart, b.size()-ostart);
+//            b = b.substr(ostart, b.size()-ostart);
             ret = PARSE_ERROR;
             std::cerr << "xx 3" << std::endl;
             break;
