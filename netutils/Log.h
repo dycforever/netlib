@@ -1,5 +1,5 @@
-#ifndef __LOG_H__
-#define __LOG_H__
+#ifndef __NETLIB_LOG_H__
+#define __NETLIB_LOG_H__
 
 #include <iostream>
 #include "log4c.h"
@@ -60,4 +60,4 @@ public:
 
 } // namespace
 
-#endif // __LOG_H__
+#endif // __NETLIB_LOG_H__

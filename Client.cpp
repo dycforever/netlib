@@ -4,6 +4,12 @@
 namespace dyc
 {
 
+Client::~Client()
+{
+    mLoop->quit();
+    pthread_join(mTid, NULL);
+}
+
 int Client::connect(const InetAddress& addr) {
     // mEpoller = boost::shared_ptr<Epoller>(NEW Epoller());
     mEpoller = NEW Epoller();
@@ -23,9 +29,8 @@ int Client::connect(const InetAddress& addr) {
     return mSock->connect(addr);
 }
 
-void Client::start () {
-    pthread_t ntid;
-    pthread_create(&ntid, NULL, thr_fn, mLoop);
+void Client::start() {
+    pthread_create(&mTid, NULL, thr_fn, mLoop);
 }
 
 void* Client::thr_fn(void* data) {

@@ -20,6 +20,7 @@ class Client {
 
 public:
     Client():mMesgId(0) { }
+    ~Client();
 
     int connect(const InetAddress& addr);
     static void* thr_fn(void* data);
@@ -33,6 +34,7 @@ public:
     int64_t send(const std::string& str);
 
 private:
+    pthread_t mTid;
     SocketPtr mSock;
 //    boost::shared_ptr<EventLoop> mLoop;
 //    boost::shared_ptr<Epoller> mEpoller;

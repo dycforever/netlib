@@ -116,14 +116,18 @@ int Connection::handleWrite(const epoll_event& event) {
 int Connection::handleRead(const epoll_event& event) {
     int ret = CONN_CONTINUE;
     long readCount = 0;
-    readCount = readSocket();
-    if (readCount <= 0) {
-        ret = CONN_REMOVE;
-        mConnected = false;
-        mRecvBuffer->setFinish();
-    } else {
-        ret = CONN_CONTINUE;
-    }
+    long readret = 0;
+    do {
+        readret = readSocket();
+        std::cerr << "read return " << readret << std::endl;
+        if (readret <= 0 && readret != -1) {
+            mConnected = false;
+            mRecvBuffer->setFinish();
+            ret = CONN_REMOVE;
+        }
+        readCount += readret;
+    } while(readret > 0);
+
     mOutputBuffer->reset();
     mReadCallback(mRecvBuffer, mOutputBuffer);
     if (mOutputBuffer->readableSize() > 0) {
