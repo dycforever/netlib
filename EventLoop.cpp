@@ -6,7 +6,6 @@
 #include "Channel.h"
 #include "Epoller.h"
 
-
 namespace dyc {
 __thread EventLoop* t_loopInThisThread = 0;
 

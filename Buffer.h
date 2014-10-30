@@ -34,7 +34,7 @@ public:
 
     ~Buffer() {
         if (mFreeBuf)
-            DELETE(mData);
+            DELETES(mData);
     }
 
     int64_t getMesgId(int64_t mesgId) { return mMesgId; }
@@ -100,5 +100,5 @@ private:
     static const char kCRLF[];
 };
 
-
 #endif  // MUDUO_NET_BUFFER_H
+

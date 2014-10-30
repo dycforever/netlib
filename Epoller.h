@@ -16,7 +16,7 @@ public:
     typedef struct epoll_event Event;
 
     Epoller();
-    ~Epoller() {pthread_mutex_destroy(&_mutex);}
+    ~Epoller() {}
     int createEpoll();
     void setTimeout(int);
 
@@ -33,12 +33,9 @@ public:
     static const int EPOLL_MAX_LISTEN_NUMBER=500;
 
 private:
-    void lock();
-    void unlock();
     int _removeEvent(ChannelPtr);
     int addEvent(ChannelPtr, uint32_t);
 
-    pthread_mutex_t _mutex;
     int _epoll_socket;
     int _timeout;
 };
