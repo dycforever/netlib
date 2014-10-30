@@ -28,6 +28,7 @@ EventLoop::EventLoop(Epoller* poller)
     }
 
 EventLoop::~EventLoop() {
+    DELETES(_active_events);
     t_loopInThisThread = NULL;
 }
 

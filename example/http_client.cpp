@@ -82,6 +82,7 @@ int main(int argc, char** argv) {
     parser.wait();
 
     parser.getResponse().dump();
+    std::cout << "end success" << std::endl;
     return 0;
 }
 

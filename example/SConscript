@@ -2,6 +2,7 @@
 
 Import("cflags")
 Import("include_dir")
+Import("lib_path")
 
 env = Environment(CPPPATH = include_dir, CCFLAGS = cflags, tools=['default', 'packaging'])
 
@@ -12,11 +13,6 @@ libsname=[
      'log4c',
      'pthread'
 ]
-
-lib_path=['/home/dyc/github/netlib/build',
-          '/home/dyc/github/program/common',
-          '/home/dyc/tools/log4c/lib',
-          '/home/dyc/tools/zlib/lib']
 
 for prog in [str(fn) for fn in Glob('*.cpp')] : 
     env.Program(prog[0:-4], [prog], LINKFLAGS="", LIBPATH=lib_path, LIBS=libsname)

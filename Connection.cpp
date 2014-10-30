@@ -119,7 +119,6 @@ int Connection::handleRead(const epoll_event& event) {
     long readret = 0;
     do {
         readret = readSocket();
-        std::cerr << "read return " << readret << std::endl;
         if (readret <= 0 && readret != -1) {
             mConnected = false;
             mRecvBuffer->setFinish();

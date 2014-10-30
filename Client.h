@@ -19,7 +19,7 @@ class Client {
     typedef boost::function< int (Buffer*) > WriteCallbackFunc;
 
 public:
-    Client():mMesgId(0) { }
+    Client();
     ~Client();
 
     int connect(const InetAddress& addr);

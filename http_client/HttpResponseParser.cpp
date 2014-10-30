@@ -22,10 +22,7 @@ ParseRet HttpResponseParser::parseRespLine(const std::string& line) {
                 << "code start: \n" << codeStart << " vEnd : " << vEnd << std::endl;
             out.close();
 
-//            assert(line.substr(codeStart, 3) == "200");
-            if (line.substr(codeStart, 3) != "200") {
-                std::cerr << "code: " << line << std::endl;
-            }
+            assert(line.substr(codeStart, 3) == "200");
         }
         mResponseObj.setState(line.substr(codeStart, 3));
     } else {

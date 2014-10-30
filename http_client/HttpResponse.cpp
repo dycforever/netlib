@@ -36,6 +36,10 @@ void printHeader(const unsigned char* buf, size_t size, const std::string& pref)
 
 std::string decode(const char* data, size_t size)
 {
+    if (size == 0) {
+        FATAL_LOG("chunk size 0");
+        return "";
+    }
     std::string res;
     int ret;
     size_t have;
@@ -164,7 +168,6 @@ std::string strToLower(const std::string& str) {
 }
 
 void HttpResponse::setHeader(const std::string& k, const std::string& v) {
-    std::cerr << "set header key: " << k << " value: " << v << std::endl;
     std::string key = strToLower(k);
     mHeaders[key] = v;
     if (key == "transfer-encoding" && v == "chunked") {
@@ -230,34 +233,27 @@ ParseRet HttpResponse::parseChunk(std::string& b) {
 //            WARN("not enough chunk size");
             b = b.substr(ostart, b.size()-ostart);
             ret = PARSE_WAIT;
-            std::cerr << "xx 1" << std::endl;
             break;
         }
         size_t chunkExt = token.find(";");
         if (chunkExt == std::string::npos) {
-            std::cerr << "chunkExt: " << chunkExt << std::endl;
             chunkExt = token.size();
         }
         std::string chunkSizeStr(token.begin(), token.begin() + chunkExt);
         int size = strtosize(chunkSizeStr);
         DEBUG_LOG("get a chunk Size: %s", chunkSizeStr.c_str());
-        std::cerr << "get a chunk Size: " << chunkSizeStr.c_str() 
-            << " => " << size << std::endl;
         if (size == 0) {
             ret = PARSE_DONE;
-            std::cerr << "xx 2" << std::endl;
             break;
         } else if (size < 0) {
 //            b = b.substr(ostart, b.size()-ostart);
             ret = PARSE_ERROR;
-            std::cerr << "xx 3" << std::endl;
             break;
         }
         size_t chunkSize = size;
         if (b.begin()+start+chunkSize >= b.end()) {
             b = b.substr(ostart, b.size()-ostart);
             ret = PARSE_WAIT;
-            std::cerr << "xx 4" << std::endl;
             break;
         }
         std::string chunk(b.begin()+start, b.begin()+start+chunkSize);
@@ -274,7 +270,7 @@ ParseRet HttpResponse::appendBody(const std::string& block) {
     if (mChunked) {
         ret = parseChunk(mBodyBuf);
     } else {
-        if (mRestContentLength <= block.size()) {
+        if (mRestContentLength != 0 && mRestContentLength <= block.size()) {
             mRestContentLength = 0;
             return PARSE_DONE;
         }
