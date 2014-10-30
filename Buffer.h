@@ -13,13 +13,21 @@
 
 class Buffer {
 public:
-    Buffer(const char* data, size_t size) : mData(const_cast<char*>(data)), 
-    mReadPos(0), mSize(size), mFinish(false), mFreeBuf(false) {
-        mWritePos = size;
+    Buffer(const char* data, size_t size) 
+        : mData(const_cast<char*>(data)), 
+          mReadPos(0), 
+          mSize(size), 
+          mFinish(false), 
+          mFreeBuf(false) {
+          mWritePos = size;
     }
 
-    Buffer(size_t size=8*1024) : mData(NULL), 
-    mReadPos(0), mSize(size), mFinish(false), mFreeBuf(true){
+    Buffer(size_t size=8*1024) 
+        : mData(NULL), 
+          mReadPos(0), 
+          mSize(size), 
+          mFinish(false), 
+          mFreeBuf(true){
         mData = new char[size];
         mWritePos = 0;
     }

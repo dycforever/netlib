@@ -4,18 +4,29 @@
 namespace dyc
 {
 
-int Client::connect(const InetAddress& addr) {
-    // mEpoller = boost::shared_ptr<Epoller>(NEW Epoller());
+Client::Client()
+    : mMesgId(0) 
+{ 
     mEpoller = NEW Epoller();
     mLoop = NEW EventLoop(mEpoller);
     mSock = NEW Socket(false);
+}
+
+Client::~Client()
+{
+    mLoop->quit();
+    pthread_join(mTid, NULL);
+    DELETE(mSock);
+    DELETE(mLoop);
+    DELETE(mEpoller);
+    DELETE(mConnection);
+}
+
+int Client::connect(const InetAddress& addr) {
     if (mEpoller == NULL || mLoop == NULL || mSock == NULL) {
         FATAL_LOG("new obj failed");
         return false;
     }
-
-    // mLoop = boost::shared_ptr<EventLoop>(NEW EventLoop(mEpoller));
-    // mSock = NEW Socket(true);
 
     mEpoller->createEpoll();
     mConnection = NEW Connection(mSock, mLoop);
@@ -23,9 +34,8 @@ int Client::connect(const InetAddress& addr) {
     return mSock->connect(addr);
 }
 
-void Client::start () {
-    pthread_t ntid;
-    pthread_create(&ntid, NULL, thr_fn, mLoop);
+void Client::start() {
+    pthread_create(&mTid, NULL, thr_fn, mLoop);
 }
 
 void* Client::thr_fn(void* data) {

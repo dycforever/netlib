@@ -235,17 +235,19 @@ read_again:
     }
     if (count == 0)
         return 0;
+
     switch(errno) {
         case EINTR:
             goto read_again;
         case EAGAIN:
+            count = -1;
             break;
         default:
+            count = -2;
             FATAL_LOG("read socket fd[%d] to[%p] return %ld with errno[%d][%s], this socket is disconnected", 
                     mSockfd, buf, count, errno, strerror(errno));
     };
     return count;
 }
-
 
 }

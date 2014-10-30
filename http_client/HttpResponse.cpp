@@ -2,6 +2,8 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+#include <fstream>
+#include <sstream>
 
 #include "http_client/HttpResponse.h"
 
@@ -34,6 +36,10 @@ void printHeader(const unsigned char* buf, size_t size, const std::string& pref)
 
 std::string decode(const char* data, size_t size)
 {
+    if (size == 0) {
+        FATAL_LOG("chunk size 0");
+        return "";
+    }
     std::string res;
     int ret;
     size_t have;
@@ -82,7 +88,7 @@ std::string decode(const char* data, size_t size)
 }
 
 std::string HttpResponse::judgeHeader(char* header, int size) {
-    if (header[0] == 0x00 && header[1] == 0x01) {
+    if (header[0] == 0x00 && header[1] == 0x01 && header[2] == 0x08) {
         header[0] = (char)0x1f;
         header[1] = (char)0x8b;
         header[2] = (char)0x08;
@@ -124,14 +130,18 @@ std::string HttpResponse::bodyToString() {
         for (int i=0; i<mChunks.size(); ++i) {
             totalChunk += mChunks[i];
             // FIXME
+            std::stringstream ss;
+            ss << "chunk_"<< i;
+            std::ofstream fout(ss.str().c_str());
+            fout << mChunks[i];
 //            decodeChunk(mChunks[i], contentType, retStr);
         }
         std::string txt;
         if (mGzip) {
             txt = decode(totalChunk.c_str(), totalChunk.size());
-            retStr.append("\n" + contentType + " content: \n").append(txt);
+            retStr.append("\n" + contentType + " content : \n").append(txt);
         } else {
-            retStr.append("\n" + contentType + " content: \n").append(totalChunk);
+            retStr.append("\n" + contentType + " content : \n").append(totalChunk);
         }
     } else { // not chunk
         char* header = const_cast<char*>(mBodyBuf.c_str());
@@ -160,13 +170,11 @@ std::string strToLower(const std::string& str) {
 void HttpResponse::setHeader(const std::string& k, const std::string& v) {
     std::string key = strToLower(k);
     mHeaders[key] = v;
-    std::string lv = strToLower(v);
-    std::transform(lv.begin(), lv.end(), lv.begin(), ::tolower);
-    if (key == "transfer-encoding" && lv == "chunked") {
-        mChunked= true;
+    if (key == "transfer-encoding" && v == "chunked") {
+        mChunked = true;
     }
     if (key == "content-length") {
-        mContentLength = atoi(lv.c_str());
+        mContentLength = atoi(v.c_str());
         mRestContentLength = mContentLength;
     }
 }
@@ -231,26 +239,25 @@ ParseRet HttpResponse::parseChunk(std::string& b) {
         if (chunkExt == std::string::npos) {
             chunkExt = token.size();
         }
-        std::string chunkSizeStr(token.c_str(), chunkExt);
+        std::string chunkSizeStr(token.begin(), token.begin() + chunkExt);
         int size = strtosize(chunkSizeStr);
         DEBUG_LOG("get a chunk Size: %s", chunkSizeStr.c_str());
         if (size == 0) {
             ret = PARSE_DONE;
             break;
         } else if (size < 0) {
-            b = b.substr(ostart, b.size()-ostart);
+//            b = b.substr(ostart, b.size()-ostart);
             ret = PARSE_ERROR;
             break;
         }
         size_t chunkSize = size;
         if (b.begin()+start+chunkSize >= b.end()) {
-//            WARN("not enough chunk");
             b = b.substr(ostart, b.size()-ostart);
             ret = PARSE_WAIT;
             break;
         }
         std::string chunk(b.begin()+start, b.begin()+start+chunkSize);
-        start += chunkSize + 2; // there is CRLF following a chunk
+        start += chunkSize + 2;
         mChunks.push_back(chunk);
     }
     return ret;
@@ -263,7 +270,7 @@ ParseRet HttpResponse::appendBody(const std::string& block) {
     if (mChunked) {
         ret = parseChunk(mBodyBuf);
     } else {
-        if (mRestContentLength <= block.size()) {
+        if (mRestContentLength != 0 && mRestContentLength <= block.size()) {
             mRestContentLength = 0;
             return PARSE_DONE;
         }

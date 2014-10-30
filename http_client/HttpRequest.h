@@ -18,7 +18,10 @@ private:
 
     typedef std::map<std::string, std::string>::iterator MapIter;
 public:
-    HttpRequest():mMethod("GET"), mUrl("/"), mVersion("HTTP/1.1"){
+    HttpRequest()
+        : mMethod("GET"), 
+          mUrl("/"), 
+          mVersion("HTTP/1.1"){
        mStr.reserve(512);
     }
 

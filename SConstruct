@@ -2,29 +2,36 @@
 
 import os
 import getpass
+homedir = os.path.expanduser("~")
 user=getpass.getuser()
 
 num_cpu=4
 SetOption('num_jobs', num_cpu)
 cflags="-g -std=c++0x"
+cflags="-g "
 libsname=[
      'netlib',
      'z',
      'pthread'
 ]
 
-include_dir = [ '/home/dyc/github/netlib/',
-                '/home/dyc/tools/zlib/include', 
-                '/home/dyc/tools/log4c/include', 
-                '/home/dyc/github/program/common'
+include_dir = [ homedir + '/github/netlib/',
+                homedir + '/tools/zlib/include', 
+                homedir + '/tools/log4c/include', 
+                homedir + '/github/program/common'
                 ]
+
+lib_path=[homedir + '/github/netlib/build',
+          homedir + '/github/program/common',
+          homedir + '/tools/log4c/lib',
+          homedir + '/tools/zlib/lib']
 
 
 
 VariantDir('build', '.')
 
-SConscript(['./SConscript'], variant_dir='build', exports=['cflags', 'include_dir'], duplicate=0)
-SConscript(['example/SConscript'], variant_dir='build/example', exports=['cflags', 'include_dir'])
+SConscript(['./SConscript'], variant_dir='build', exports=['cflags', 'include_dir', 'lib_path'], duplicate=0)
+SConscript(['example/SConscript'], variant_dir='build/example', exports=['cflags', 'include_dir', 'lib_path'])
 
 # SConscript(['utils/SConscript'], variant_dir='build/utils', exports='include_dir')
 # SConscript(['test/SConscript'], variant_dir='build/test', exports='include_dir')

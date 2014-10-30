@@ -57,7 +57,7 @@ int HttpResponseParser::parse(const std::string& resp, bool isFinish) {
     if (mPhase == LINE) {
         // TODO if too long, return error
         start = getToken(mResponseBuf, start, token, "\r\n");
-        if (token.size() >= 1024) {
+        if (token.size() >= 10240) {
             WARN_LOG("response line too long: %s", token.c_str());
             return PARSE_ERROR;
         }
@@ -117,7 +117,9 @@ int HttpResponseParser::readData(Buffer* buffer, Buffer* outptuBuffer) {
 }
 
 int HttpResponseParser::conn(bool success) {
-    std::cout << "conn build " << success << std::endl;
+    std::cout << "conn build " 
+        << (success ? " success" : " failed")
+        << std::endl;
 }
 
 void HttpResponseParser::wait() {

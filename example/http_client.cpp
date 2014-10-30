@@ -24,7 +24,7 @@ std::string host = "m.sp.sm.cn";
 
 int parseArg(int argc, char** argv) {
     int c;
-    while((c = getopt(argc, argv, "v:u:a:h:p:i:")) != -1) {
+    while((c = getopt(argc, argv, "v:u:a:hp:i:H:")) != -1) {
         switch(c) {
             case 'v':
                 if (std::string(optarg) == "0")
@@ -36,7 +36,7 @@ int parseArg(int argc, char** argv) {
             case 'a':
                 ae = optarg;
                 break;
-            case 'h':
+            case 'H':
                 host = optarg;
                 break;
             case 'i':
@@ -45,6 +45,9 @@ int parseArg(int argc, char** argv) {
             case 'p':
                 port = optarg;
                 break;
+            case 'h':
+                printf("usage: -v[0|1] -u url -a accept-encoding -H host -i ip -p port\n");
+                exit(0);
             default:
                 std::cerr << "parse options failed" << std::endl;
                 return -1;
@@ -79,6 +82,7 @@ int main(int argc, char** argv) {
     parser.wait();
 
     parser.getResponse().dump();
+    std::cout << "end success" << std::endl;
     return 0;
 }
 

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 Import("include_dir")
-cflags="-g -std=c++0x"
+cflags="-g "
 
 env = Environment(CPPPATH = include_dir, CCFLAGS = cflags, tools=['default', 'packaging'])
 

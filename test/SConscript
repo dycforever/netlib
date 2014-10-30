@@ -1,5 +1,15 @@
-#
-Import('include_dir')
+#!/usr/bin/python
+
+import os
+homedir = os.path.expanduser("~")
+include_dir = [ homedir + '/github/netlib/',
+                homedir + '/github/netlib/http_client',
+                homedir + '/github/netlib/netutils',
+                homedir + '/tools/zlib/include', 
+                homedir + '/tools/log4c/include', 
+                homedir + '/github/program/common'
+                ]
+
 
 env = Environment(CPPPATH = [include_dir], CCFLAGS = '-g')
 
@@ -10,6 +20,6 @@ libsname=[
      'pthread'
 ]
 
-# for file in test_sources:
-#     env.Program(file[0:file.find(".cpp")], [file], LIBPATH=[".."], LIBS=libsname)
+for file in test_sources:
+    env.Program(file[0:file.find(".cpp")], [file], LIBPATH=["../build"], LIBS=libsname)
 
