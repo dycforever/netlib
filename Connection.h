@@ -83,7 +83,6 @@ private:
     size_t mSendInqueue;
     size_t mSendBySocket;
     
-    SpinLock mLock;
     Buffer* getSendBuffer();
 };
 

@@ -2,6 +2,7 @@
 #define __EPOLLER_H__
 
 #include <boost/shared_ptr.hpp>
+#include <list>
 
 #include "common.h"
 
@@ -13,31 +14,34 @@ namespace dyc {
 class Epoller {
 public:
     typedef Channel* ChannelPtr;
+    typedef std::list<ChannelPtr> ChannelList;
+    typedef ChannelList::iterator ChannelListIter;
     typedef struct epoll_event Event;
 
     Epoller();
-    ~Epoller() {}
+    ~Epoller();
     int createEpoll();
     void setTimeout(int);
 
+    int poll(Event*);
     int addRead(ChannelPtr);
     int addWrite(ChannelPtr);
     int addRW(ChannelPtr);
     int removeEvent(ChannelPtr);
-
     int updateEvent(ChannelPtr);
-    int poll(Event*);
-
-    std::string eventsToStr(uint32_t);
 
     static const int EPOLL_MAX_LISTEN_NUMBER=500;
 
 private:
-    int _removeEvent(ChannelPtr);
+    int removeEventFromEpoll(ChannelPtr);
     int addEvent(ChannelPtr, uint32_t);
 
-    int _epoll_socket;
-    int _timeout;
+    std::string eventsToStr(uint32_t);
+
+private:
+    int mEpollSocket;
+    int mTimeout;
+    ChannelList mChannelList;
 };
 
 inline void* epollRun(void* p) {

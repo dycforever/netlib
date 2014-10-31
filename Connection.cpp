@@ -23,7 +23,6 @@ Connection::~Connection() {
 }
 
 void Connection::addBufferToSendQueue(Buffer* buffer) {
-//    LockGuard<SpinLock> g(mLock);
     mSendInqueue += buffer->readableSize();
     DEBUG_LOG("add buffer in send queue");
     mSendBuffers.push_back(buffer);
@@ -31,7 +30,6 @@ void Connection::addBufferToSendQueue(Buffer* buffer) {
 }
 
 void Connection::addBufferToSendQueue(const char* data, size_t size) {
-//    LockGuard<SpinLock> g(mLock);
     mSendInqueue += size;
     DEBUG_LOG("add data in send queue");
     Buffer* buffer = NEW Buffer(data, size);
@@ -40,13 +38,11 @@ void Connection::addBufferToSendQueue(const char* data, size_t size) {
 }
 
 int64_t Connection::takeOffBuffer() {
-//    LockGuard<SpinLock> g(mLock);
     DEBUG_LOG("remove buffer in send queue");
     mSendBuffers.pop_front();
 }
 
 Buffer* Connection::getSendBuffer() {
-//    LockGuard<SpinLock> g(mLock);
     if (mSendBuffers.size() == 0) {
         return NULL;
     }
@@ -79,14 +75,12 @@ long Connection::writeSocket(Buffer* buffer) {
 int Connection::handleWrite(const epoll_event& event) {
     long ret = CONN_CONTINUE;
     Buffer* buffer = getSendBuffer();
-    if (buffer != NULL) {
-        DEBUG_LOG("get buffer of size: %lu", buffer->readableSize());
-    }
     while (true) {
         if (buffer == NULL || buffer->readableSize()==0) {
             disableWrite();
             break;
         }
+        DEBUG_LOG("get buffer of size: %lu", buffer->readableSize());
         // TODO use writev
         ret = writeSocket(buffer);
         if (ret < 0) {
@@ -106,9 +100,6 @@ int Connection::handleWrite(const epoll_event& event) {
             DELETE(buffer);
         }
         buffer = getSendBuffer();
-        if (buffer != NULL) {
-            DEBUG_LOG("get buffer of size: %lu", buffer->readableSize());
-        }
     }
     return (int)ret;
 }
@@ -119,7 +110,8 @@ int Connection::handleRead(const epoll_event& event) {
     long readret = 0;
     do {
         readret = readSocket();
-        if (readret <= 0 && readret != -1) {
+        if ((readret == 0) || 
+                (readret < 0 && errno != EAGAIN)) {
             mConnected = false;
             mRecvBuffer->setFinish();
             ret = CONN_REMOVE;
@@ -151,7 +143,6 @@ int Connection::handleConnect(const epoll_event& event) {
 }
 
 size_t Connection::getSendBufferCount() {
-//    LockGuard<SpinLock> g(mLock);
     return mSendBuffers.size();
 }
 
