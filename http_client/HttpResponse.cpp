@@ -240,18 +240,19 @@ ParseRet HttpResponse::parseChunk(std::string& b) {
             chunkExt = token.size();
         }
         std::string chunkSizeStr(token.begin(), token.begin() + chunkExt);
-        int size = strtosize(chunkSizeStr);
-        DEBUG_LOG("get a chunk Size: %s", chunkSizeStr.c_str());
-        if (size == 0) {
+        int chunkSize = strtosize(chunkSizeStr);
+        DEBUG_LOG("get a chunk Size: %s => %d", chunkSizeStr.c_str(), chunkSize);
+        if (chunkSize == 0) {
             ret = PARSE_DONE;
             break;
-        } else if (size < 0) {
+        } else if (chunkSize < 0) {
 //            b = b.substr(ostart, b.size()-ostart);
             ret = PARSE_ERROR;
             break;
         }
-        size_t chunkSize = size;
-        if (b.begin()+start+chunkSize >= b.end()) {
+        if (start + chunkSize >= b.size()) {
+            DEBUG_LOG("get a half chunk start[%lu] chunkSize[%d] data size[%lu]", 
+                    start, chunkSize, (size_t)b.size());
             b = b.substr(ostart, b.size()-ostart);
             ret = PARSE_WAIT;
             break;

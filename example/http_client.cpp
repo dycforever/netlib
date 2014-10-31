@@ -77,6 +77,7 @@ int main(int argc, char** argv) {
     req.setVersion(version);
     req.setHeader("host", host);
     req.setHeader("Accept-Encoding", ae);
+    req.setHeader("User-Agent", "Mozilla/5.0 (Linux; Android 4.1.1; Nexus 7 Build/JRO03D) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.166  Safari/535.19");
 
     client.send(req.toString());
     parser.wait();

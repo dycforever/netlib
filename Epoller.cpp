@@ -9,9 +9,9 @@ Epoller::Epoller() : mTimeout(-1) {
 
 Epoller::~Epoller() {
     ChannelListIter iter = mChannelList.begin();
-    for (; iter != mChannelList.end(); iter++) {
+    for (; iter != mChannelList.end();) {
         removeEventFromEpoll(*iter);
-        mChannelList.erase(iter);
+        mChannelList.erase(iter++);
     }
 }
 
