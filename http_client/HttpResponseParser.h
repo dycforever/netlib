@@ -16,7 +16,13 @@ class HttpResponseParser {
 private:
     enum ParsePhase {LINE, HEADER, BODY};
 public:
-    HttpResponseParser():mResponseBuf(""), mHasRead(0), mHasParsed(0), mCond(mLock), mPhase(LINE)
+    HttpResponseParser()
+        : mResponseBuf(""), 
+          mHasRead(0), 
+          mHasParsed(0), 
+          mDone(false),
+          mCond(mLock), 
+          mPhase(LINE)
 {
     mTest = false;
 }
@@ -35,6 +41,7 @@ private:
     std::string mResponseBuf;
     int mHasParsed;
     size_t mHasRead;
+    bool mDone;
     MutexLock mLock;
     Condition mCond;
     HttpResponse mResponseObj;

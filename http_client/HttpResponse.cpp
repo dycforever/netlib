@@ -87,14 +87,14 @@ std::string decode(const char* data, size_t size)
     return res;
 }
 
-std::string HttpResponse::judgeHeader(char* header, int size) {
-    if (header[0] == 0x00 && header[1] == 0x01 && header[2] == 0x08) {
-        header[0] = (char)0x1f;
-        header[1] = (char)0x8b;
-        header[2] = (char)0x08;
+std::string HttpResponse::judgeHeader(std::string& data) {
+    if (data[0] == 0x00 && data[1] == 0x01 && data[2] == 0x08) {
+        data[0] = (char)0x1f;
+        data[1] = (char)0x8b;
+        data[2] = (char)0x08;
         mGzip = true;
         return "gz2";
-    } else if (header[0] == (char)0x1f && header[1] == (char)0x8b && header[2] == (char)0x08) {
+    } else if (data[0] == (char)0x1f && data[1] == (char)0x8b && data[2] == (char)0x08) {
         mGzip = true;
         return "gzip";
     } else {
@@ -124,8 +124,7 @@ void HttpResponse::decodeChunk(const std::string& chunk, const std::string& cont
 std::string HttpResponse::bodyToString() {
     std::string retStr;
     if (mChunked && mChunks.size() > 0) {
-        char* header = const_cast<char*>(mChunks[0].c_str());
-        std::string contentType = judgeHeader(header, mChunks[0].size());
+        std::string contentType = judgeHeader(mChunks[0]);
         std::string totalChunk;
         for (int i=0; i<mChunks.size(); ++i) {
             totalChunk += mChunks[i];
@@ -143,9 +142,18 @@ std::string HttpResponse::bodyToString() {
         } else {
             retStr.append("\n" + contentType + " content : \n").append(totalChunk);
         }
-    } else { // not chunk
-        char* header = const_cast<char*>(mBodyBuf.c_str());
-        std::string contentType = judgeHeader(header, mBodyBuf.size());
+    } else if(mChunked && mChunks.size() == 0) {
+        size_t start = 0;
+        start = getToken(mBodyBuf, start, token, "\r\n");
+        if (start == std::string::npos) {
+            decodeChunk(mBodyBuf, "unknown", retStr);
+        } else {
+            string b = mBodyBuf.substr(start, b.size() - start);
+            std::string contentType = judgeHeader(b);
+            decodeChunk(b, contentType, retStr);
+        }
+    }else { // not chunk
+        std::string contentType = judgeHeader(mBodyBuf);
         decodeChunk(mBodyBuf, contentType, retStr);
     }
     return retStr;

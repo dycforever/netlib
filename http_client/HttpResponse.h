@@ -12,7 +12,7 @@ class HttpResponse {
 public:
     HttpResponse();
 
-    std::string judgeHeader(char* header, int size);
+    std::string judgeHeader(std::string&);
     size_t isChunked();
     std::string getStatusCode() {return mStatusCode;}
     std::string getContentType() {return mHeaders["content-type"];}

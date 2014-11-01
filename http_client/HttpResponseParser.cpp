@@ -111,6 +111,9 @@ int HttpResponseParser::readData(Buffer* buffer, Buffer* outptuBuffer) {
     DEBUG_LOG("read %lu bytes data, finish[%d]", size, (int)buffer->isFinish());
     std::string resp(buf, size);
     if (parse(resp, buffer->isFinish()) == PARSE_DONE) {
+        LockGuard<MutexLock> guard(mLock);
+        mDone = true;
+        DEBUG_LOG("done to notify");
         mCond.notify();
     }
     return 0;
@@ -124,7 +127,12 @@ int HttpResponseParser::conn(bool success) {
 
 void HttpResponseParser::wait() {
     LockGuard<MutexLock> guard(mLock);
-    mCond.wait();
+    DEBUG_LOG("will wait");
+    while (!mDone) {
+        mCond.wait();
+    }
+    DEBUG_LOG("wait done");
+    return;
 }
 
 HttpResponse& HttpResponseParser::getResponse() {
