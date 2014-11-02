@@ -144,11 +144,12 @@ std::string HttpResponse::bodyToString() {
         }
     } else if(mChunked && mChunks.size() == 0) {
         size_t start = 0;
+        std::string token;
         start = getToken(mBodyBuf, start, token, "\r\n");
         if (start == std::string::npos) {
             decodeChunk(mBodyBuf, "unknown", retStr);
         } else {
-            string b = mBodyBuf.substr(start, b.size() - start);
+            std::string b = mBodyBuf.substr(start, b.size() - start);
             std::string contentType = judgeHeader(b);
             decodeChunk(b, contentType, retStr);
         }

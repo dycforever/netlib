@@ -41,9 +41,9 @@ void EventLoop::loop() {
         ++iteration_;
 
         int nfds = _poller->poll(_active_events);
-        if (nfds != 0) {
+//        if (nfds != 0) {
             DEBUG_LOG("eventloop detect %d events", nfds);
-        }
+//        }
         if (nfds < 0) {
             FATAL_LOG("poll failed: %d", nfds);
             return;

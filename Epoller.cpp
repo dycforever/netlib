@@ -4,7 +4,7 @@
 namespace dyc {
 
 Epoller::Epoller() : mTimeout(-1) {
-    mTimeout = 10;
+    mTimeout = 1000;
 }
 
 Epoller::~Epoller() {
@@ -89,6 +89,7 @@ int Epoller::poll(Event* list) {
             WARN_LOG("epoll_wait return %d with errno[%d]: %s", ret, errno, strerror(errno));
             ret = -1;
     };
+    sleep(1);
     return ret;
 }
 

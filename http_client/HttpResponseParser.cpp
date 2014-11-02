@@ -132,7 +132,6 @@ void HttpResponseParser::wait() {
         mCond.wait();
     }
     DEBUG_LOG("wait done");
-    return;
 }
 
 HttpResponse& HttpResponseParser::getResponse() {

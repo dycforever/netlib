@@ -18,8 +18,8 @@ ssize_t Socket::recvmsg(struct msghdr *msg, int flags) {
 }
 
 int Socket::close() {
-//    int ret = ::close(mSockfd);
-    int ret  = 0;
+    int ret = ::close(mSockfd);
+//    int ret  = 0;
     if (ret == 0) {
         INFO_LOG("close %d success", mSockfd);
     } else {
@@ -230,13 +230,18 @@ write_again:
 long Socket::recv(char* buf, size_t len) {
     long count = 0;
 read_again:
-    count = read(mSockfd, buf, len);
-    DEBUG_LOG("socket read %ld bytes", count);
+    count = ::read(mSockfd, buf, len);
+    DEBUG_LOG("socket [%d] read %ld bytes", mSockfd, count);
     if (count > 0) {
         return count;
     }
-    if (count == 0)
+    if (count == 0) {
+        for (size_t i = 0; i < 10; i++) {
+            count = ::read(mSockfd, buf, len);
+            DEBUG_LOG("after 0, socket[%d] read %ld bytes", mSockfd, count);            
+        }
         return 0;
+    }
 
     switch(errno) {
         case EINTR:

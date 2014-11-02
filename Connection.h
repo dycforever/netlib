@@ -61,9 +61,12 @@ public:
     int64_t takeOffBuffer();
 
 private:
-    static int defaultWriteCallback(Buffer*) { std::cout << "call Connection::defaultWriteCallback" << std::endl;}
-    static int defaultConnCallback(bool) { std::cout << "call Connection::defaultConnCallback" << std::endl;}
-    static int defaultReadCallback(Buffer*, Buffer*) { std::cout << "call Connection::defaultReadCallback" << std::endl;}
+//    static int defaultWriteCallback(Buffer*) { std::cout << "call Connection::defaultWriteCallback" << std::endl;}
+//    static int defaultConnCallback(bool) { std::cout << "call Connection::defaultConnCallback" << std::endl;}
+//    static int defaultReadCallback(Buffer*, Buffer*) { std::cout << "call Connection::defaultReadCallback" << std::endl;}
+    static int defaultWriteCallback(Buffer*) { return 0;}
+    static int defaultConnCallback(bool) { return 0;}
+    static int defaultReadCallback(Buffer*, Buffer*) { return 0;}
 
 private:
     InetAddress localAddr;
