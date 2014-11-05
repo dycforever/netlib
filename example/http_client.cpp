@@ -15,7 +15,7 @@
 using namespace dyc;
 
 // global options:
-std::string version = "HTTP/1.1";
+std::string version = "HTTP/1.0";
 std::string ae = "gzip";
 std::string url = "/s?q=qq";
 std::string ip = "42.120.169.24";

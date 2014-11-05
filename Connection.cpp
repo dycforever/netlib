@@ -115,7 +115,7 @@ int Connection::handleRead(const epoll_event& event) {
             mConnected = false;
             mRecvBuffer->setFinish();
             // for debug
-//            ret = CONN_REMOVE;
+            ret = CONN_REMOVE;
         }
         readCount += readret;
     } while(readret > 0);

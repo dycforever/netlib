@@ -238,6 +238,7 @@ read_again:
     if (count == 0) {
         for (size_t i = 0; i < 10; i++) {
             count = ::read(mSockfd, buf, len);
+            sleep(1);
             DEBUG_LOG("after 0, socket[%d] read %ld bytes", mSockfd, count);            
         }
         return 0;
