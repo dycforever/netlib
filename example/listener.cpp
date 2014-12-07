@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
 
     while(1) {
         getchar();
-        ret = socket.recv(buf, 1);
+        ret = socket.recv(buf, 1, NULL);
         std::cout << "recv: " << ret << std::endl;
     }
 

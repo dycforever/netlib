@@ -49,17 +49,18 @@ Buffer* Connection::getSendBuffer() {
     return mSendBuffers.front();
 }
 
-
-long Connection::readSocket() {
-    // TODO: if buffer size == 0 ?
-    long ret = mSocket->recv(mRecvBuffer->beginWrite(), mRecvBuffer->writableSize());
-    DEBUG_LOG("read %ld bytes", ret);
+long Connection::readSocket(int* errNo) {
+    if (mRecvBuffer->writableSize() == 0) {
+        DEBUG_LOG("recv buffer full");
+        return -2;
+    }
+    long ret = mSocket->recv(mRecvBuffer->beginWrite(), mRecvBuffer->writableSize(), errNo);
+    DEBUG_LOG("socket->recv %ld bytes", ret);
     if (ret > 0) {
         mRecvBuffer->hasWriten(static_cast<size_t>(ret));
     }
     return ret;
 }
-
 
 long Connection::writeSocket(Buffer* buffer) {
     long ret = mSocket->send(buffer->beginRead(), buffer->readableSize());
@@ -108,14 +109,21 @@ int Connection::handleRead(const epoll_event& event) {
     int ret = CONN_CONTINUE;
     long readCount = 0;
     long readret = 0;
+    mRecvBuffer->reset();
     do {
-        readret = readSocket();
-        if ((readret == 0) || 
-                (readret < 0 && errno != EAGAIN)) {
+        int errNo;
+        readret = readSocket(&errNo);
+        if ((readret == -1 && errNo != EAGAIN && errNo != EINTR) ||
+                (readret == 0)) {
             mConnected = false;
             mRecvBuffer->setFinish();
             // for debug
             ret = CONN_REMOVE;
+        }
+        if (readret == -2) {
+            break;
+        } else if (readret < 0) {
+            DEBUG_LOG("unknow ret [%ld]", readret);
         }
         readCount += readret;
     } while(readret > 0);

@@ -13,6 +13,13 @@ Epoller::~Epoller() {
         removeEventFromEpoll(*iter);
         mChannelList.erase(iter++);
     }
+    int ret = ::close(mEpollSocket);
+//    int ret  = 0;
+    if (ret == 0) {
+        INFO_LOG("close epoll fd %d success", mEpollSocket);
+    } else {
+        FATAL_LOG("close epoll fd %d failed: %d %s", mEpollSocket, errno, strerror(errno));
+    }
 }
 
 void Epoller::setTimeout(int t) {

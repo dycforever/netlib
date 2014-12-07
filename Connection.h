@@ -52,7 +52,7 @@ public:
     void enableWrite();
     void disableWrite();
 
-    long readSocket();
+    long readSocket(int*);
     long writeSocket(Buffer* buffer);
 
     size_t getSendBufferCount ();

@@ -1,4 +1,3 @@
-
 #include "Socket.h"
 #include "InetAddress.h"
 #include "EventLoop.h"
@@ -51,7 +50,7 @@ public:
     }
 
     bool mDone;
-    MutexLock mLock;
+    MutexLock mLock; 
     Condition mCond;
 };
 
@@ -73,41 +72,76 @@ int main(int argc, char** argv) {
     req.setHeader("host", host);
     req.setHeader("Accept-Encoding", ae);
     req.setHeader("Connection", "close");
-    req.setHeader("User-Agent", "Mozilla/5.0 (Linux; Android 4.1.1; Nexus 7 Build/JRO03D) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.166  Safari/535.19");
+//    req.setHeader("User-Agent", "Mozilla/5.0 (Linux; Android 4.1.1; Nexus 7 Build/JRO03D) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.166  Safari/535.19");
 
     client.send(req.toString());
 
     foo.wait();
-    while (1) {
-        sleep(1);
-    }
+//    while (1) {sleep(1);}
+
+    INFO_LOG("main exit");
+
     return 0;
 }
 
+
+//
+// *****************
+//
+// void epollDeal(Socket& socket) {
+//     struct epoll_event ev,events[2];
+//     ev.data.fd = socket.fd();
+//     ev.events = EPOLLIN;
+// 
+//     int epfd = epoll_create(256);
+//     epoll_ctl(epfd, EPOLL_CTL_ADD, socket.fd(), &ev);
+//     for (;;) {
+//         int nfds = epoll_wait(epfd, events, 2, 100);
+//         INFO_LOG("epoll wait %d events", nfds);
+//         if (nfds != 1) {
+//             continue;
+//         }
+//         if (events[0].data.fd != socket.fd()) {
+//             INFO_LOG("unknown fd %d", socket.fd());
+//         }
+//         char recvBuf[1024];
+//         size_t recvBytes = socket.recv(recvBuf, 1024);
+//         std::cout << std::string(recvBuf, recvBytes) << std::endl;
+//         INFO_LOG("recv %lu bytes", recvBytes);
+//         if (recvBytes == 0) {
+//             break;
+//         }
+//     }
+// }
+// 
 // int main() 
 // {
+//      InetAddress addr(ip, static_cast<uint16_t>(atoi(port.c_str())));    
+//      Socket socket(false);
+//      int ret = socket.connect(addr);
+//      assert(ret == 0);
+//  
 //      HttpRequest req;
 //      req.setUrl(url);
 //      req.setVersion(version);
 //      req.setHeader("host", host);
 //      req.setHeader("Accept-Encoding", ae);
 //      req.setHeader("Connection", "close");
-//      req.setHeader("User-Agent", "Mozilla/5.0 (Linux; Android 4.1.1; Nexus 7 Build/JRO03D) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.166  Safari/535.19");
-// 
-//      std::string requestStr = req.toString();
-//      InetAddress addr(ip, static_cast<uint16_t>(atoi(port.c_str())));    
-//      Socket socket(true);
-//      socket.connect(addr);
-// 
-//      socket.send(requestStr.c_str(), requestStr.size());
-// 
-//      char buf[1024];
-//      size_t count = socket.recv(buf, 1024);
-//      while (count != 0) {
-//          std::cout << std::string(buf, count) << std::endl;
-//          count = socket.recv(buf, 1024);
+//  
+//      std::string mesg = req.toString();
+//      size_t mesgLength = mesg.length();
+//      size_t sentBytes = 0;
+//      while (sentBytes != mesgLength) {
+//         long tmp = socket.send(mesg.c_str() + sentBytes, mesgLength - sentBytes);
+//         if (tmp != -1) {
+//             sentBytes += tmp;
+//             std::cout << "sent " << tmp << " bytes" << std::endl;
+//         }
+//         usleep(1000);
 //      }
-//      socket.close();
+// 
+//      epollThread(socket);
 //      return 0;
 // }
+
 

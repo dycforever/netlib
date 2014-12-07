@@ -65,7 +65,7 @@ public:
     void setLinger(bool on, int timeout);
 
     int send(const char* buf, size_t len);
-    long recv(char* buf, size_t len);
+    long recv(char* buf, size_t len, int*);
 
     bool getPeerAddr(InetAddress& addr);
     bool checkConnected();

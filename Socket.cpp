@@ -227,7 +227,7 @@ write_again:
     return count;
 }
 
-long Socket::recv(char* buf, size_t len) {
+long Socket::recv(char* buf, size_t len, int* errNo) {
     long count = 0;
 read_again:
     count = ::read(mSockfd, buf, len);
@@ -236,24 +236,21 @@ read_again:
         return count;
     }
     if (count == 0) {
-        for (size_t i = 0; i < 10; i++) {
-            count = ::read(mSockfd, buf, len);
-            sleep(1);
-            DEBUG_LOG("after 0, socket[%d] read %ld bytes", mSockfd, count);            
-        }
         return 0;
     }
 
+    if (errNo != NULL) {
+        *errNo = errno;
+    }
     switch(errno) {
         case EINTR:
-            goto read_again;
         case EAGAIN:
             break;
         default:
             FATAL_LOG("read socket fd[%d] to[%p] return %ld with errno[%d][%s], this socket is disconnected", 
                     mSockfd, buf, count, errno, strerror(errno));
     };
-    return count;
+    return -1;
 }
 
 }

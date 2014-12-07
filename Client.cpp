@@ -16,10 +16,10 @@ Client::~Client()
 {
     mLoop->quit();
     pthread_join(mTid, NULL);
+    DELETE(mConnection);
     DELETE(mSock);
     DELETE(mLoop);
     DELETE(mEpoller);
-    DELETE(mConnection);
 }
 
 int Client::connect(const InetAddress& addr) {
