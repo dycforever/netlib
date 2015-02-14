@@ -9,17 +9,15 @@ namespace dyc {
 
 Connection::Connection(SocketPtr socket, EventLoop* loop): 
     mConnected(false), mSocket(socket), mLoop(loop), 
-    mRecvBuffer(NULL), mOutputBuffer(NULL), mSendInqueue(0), mSendBySocket(0) { 
+    mRecvBuffer(NULL), mSendInqueue(0), mSendBySocket(0) { 
         mRecvBuffer = new Buffer();
-        mOutputBuffer = new Buffer();
-        mWriteCallback = boost::bind(&defaultWriteCallback, mOutputBuffer);
+        mWriteCallback = boost::bind(&defaultWriteCallback, (Buffer*)NULL);
         mReadCallback = boost::bind(&defaultReadCallback, _1, _2);
         mConnCallback = boost::bind(&defaultConnCallback, _1);
 }
 
 Connection::~Connection() {
     DELETE(mRecvBuffer);
-    DELETE(mOutputBuffer);
 }
 
 void Connection::addBufferToSendQueue(Buffer* buffer) {
@@ -52,7 +50,7 @@ Buffer* Connection::getSendBuffer() {
 long Connection::readSocket(int* errNo) {
     if (mRecvBuffer->writableSize() == 0) {
         DEBUG_LOG("recv buffer full");
-        return -2;
+        return RET_WRITE_BUFFER_FULL;
     }
     long ret = mSocket->recv(mRecvBuffer->beginWrite(), mRecvBuffer->writableSize(), errNo);
     DEBUG_LOG("socket->recv %ld bytes", ret);
@@ -113,14 +111,14 @@ int Connection::handleRead(const epoll_event& event) {
     do {
         int errNo;
         readret = readSocket(&errNo);
-        if ((readret == -1 && errNo != EAGAIN && errNo != EINTR) ||
+        if ((readret == RET_HAS_ERROR && errNo != EAGAIN && errNo != EINTR) ||
                 (readret == 0)) {
             mConnected = false;
             mRecvBuffer->setFinish();
             // for debug
             ret = CONN_REMOVE;
         }
-        if (readret == -2) {
+        if (readret == RET_WRITE_BUFFER_FULL) {
             break;
         } else if (readret < 0) {
             DEBUG_LOG("unknow ret [%ld]", readret);
@@ -128,10 +126,10 @@ int Connection::handleRead(const epoll_event& event) {
         readCount += readret;
     } while(readret > 0);
 
-    mOutputBuffer->reset();
-    mReadCallback(mRecvBuffer, mOutputBuffer);
-    if (mOutputBuffer->readableSize() > 0) {
-        addBufferToSendQueue(mOutputBuffer);
+    Buffer* outputBuffer = NEW Buffer;
+    mReadCallback(mRecvBuffer, outputBuffer);
+    if (outputBuffer->readableSize() > 0) {
+        addBufferToSendQueue(outputBuffer);
     }
     return ret;
 }

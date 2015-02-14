@@ -31,6 +31,7 @@ Server::~Server() {
 
 Connection* Server::newConnection(Socket* socket) {
     Connection* conn = NEW Connection(socket, mLoop);
+    socket->setNonblocking();
     conn->setReadCallback(mReadCallback);
     conn->setWriteCallback(mWriteCallback);
     mConnections.insert(conn);

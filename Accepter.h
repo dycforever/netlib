@@ -20,10 +20,13 @@ public:
         NOTICE_LOG("accept a new conn with addr:%s", addr.toIpPort().c_str());
         if (newfd< 0) {
             FATAL_LOG("fd[%d] errno[%d]: %s", newfd, errno, strerror(errno));
-            return -1;
+            return CONN_CONTINUE;
         }
         Socket* newso = NEW Socket(newfd);
-        return (mNewConnCallback(newso) != NULL) ? 0 : -1;
+        if (mNewConnCallback(newso) == NULL) {
+            DELETE(newso);
+        }
+        return CONN_CONTINUE;
     }
 
     void setNewConnCallback(NewConnCallback cb) {

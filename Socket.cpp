@@ -210,7 +210,7 @@ void Socket::setLinger(bool on, int timeout) {
 
 int Socket::send(const char* buf, size_t len) {
 write_again:
-    DEBUG_LOG("raw socket writing: %s", buf);
+    DEBUG_LOG("raw socket writing: %p", buf);
     int count = write(mSockfd, buf, len);
     if (count > 0) {
         return count;

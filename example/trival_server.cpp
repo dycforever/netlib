@@ -37,19 +37,37 @@ int parseArg(int argc, char** argv) {
 int getConnected(Buffer* buffer, Buffer* outputBuffer) {
     size_t size = buffer->readableSize();
     string mesg(buffer->get(size), size);
-    cout << "recv " << size << "bytes data: " << mesg << endl;
+    cout << "recv " << size << " bytes data: [" << mesg << "]" << endl;
     outputBuffer->append("hello response");
     return 0;
 }
 
-int main() {
-    typedef boost::function< int (Buffer*, Buffer*) > ReadCallbackFunc;
+// int main() {
+//     typedef boost::function< int (Buffer*, Buffer*) > ReadCallbackFunc;
+//     InetAddress addr(ip, static_cast<uint16_t>(atoi(port.c_str())));
+//     Server server(addr);
+//     ReadCallbackFunc func = boost::bind(&getConnected, _1, _2);
+//     server.setReadCallback(func);
+//     server.start();
+// 
+//     return 0;
+// }
 
-    InetAddress addr(ip, static_cast<uint16_t>(atoi(port.c_str())));
-    Server server(addr);
-    ReadCallbackFunc func = boost::bind(&getConnected, _1, _2);
-    server.setReadCallback(func);
-    server.start();
+int main()
+{
+    Socket* mListenSocket = NEW Socket(false);
+    assert(mListenSocket != NULL);
 
-    return 0;
+    std::string ip = "0.0.0.0";
+    std::string port = "8714";
+    InetAddress addr(ip, static_cast<uint16_t>(atoi(port.c_str())));    
+    int ret = mListenSocket->bind(addr);
+    assert(ret != -1);
+    ret = mListenSocket->listen();
+    assert(ret != -1);
+
+    while(1) {
+        sleep(1);
+    }
 }
+

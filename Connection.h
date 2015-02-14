@@ -20,6 +20,11 @@ namespace dyc {
 class EventLoop;
 
 class Connection : public Channel {
+private:
+    enum {
+        RET_WRITE_BUFFER_FULL = -2,
+        RET_HAS_ERROR = -1
+    };
 public:
 //    typedef boost::shared_ptr<Socket> SocketPtr;
     typedef Socket* SocketPtr;
@@ -81,7 +86,6 @@ private:
 
     int mEvents;
     Buffer* mRecvBuffer;
-    Buffer* mOutputBuffer;
     std::list<Buffer*> mSendBuffers;
     size_t mSendInqueue;
     size_t mSendBySocket;
