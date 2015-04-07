@@ -7,8 +7,8 @@ user=getpass.getuser()
 
 num_cpu=4
 SetOption('num_jobs', num_cpu)
-cflags="-g "
 cflags="-g -std=c++0x"
+cflags="-g "
 libsname=[
      'netlib',
      'z',

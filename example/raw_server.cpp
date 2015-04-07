@@ -1,10 +1,19 @@
 
+#include <boost/function.hpp>
+#include <boost/bind.hpp>
+
+#include "common.h"
 #include "Socket.h"
 #include "InetAddress.h"
+#include "Buffer.h"
+#include "EventLoop.h"
+#include "Server.h"
 
+using namespace std;
 using namespace dyc;
 
-std::string ip = "127.0.0.1";
+// global options:
+std::string ip = "0.0.0.0";
 std::string port = "8714";
 
 int parseArg(int argc, char** argv) {
@@ -25,18 +34,26 @@ int parseArg(int argc, char** argv) {
         }
     }
     return 0;
-}
+} // parseArg()
 
-int main(int argc, char** argv) {
 
+int main(int argc, char** argv)
+{
     parseArg(argc, argv);
+    Socket* mListenSocket = NEW Socket(true);
+    assert(mListenSocket != NULL);
+
     InetAddress addr(ip, static_cast<uint16_t>(atoi(port.c_str())));    
+    int ret = mListenSocket->bind(addr);
+    assert(ret != -1);
+    ret = mListenSocket->listen();
+    assert(ret != -1);
+
+    getchar();
     while(1) {
-        Socket socket(true);
-        socket.connect(addr); 
-        InetAddress peerAddr;
-        socket.getLocalAddr(peerAddr);
-        INFO_LOG("client addr: %s", peerAddr.toIpPort().c_str());
+        InetAddress remoteAddr;
+        mListenSocket->accept(remoteAddr);
+        std::cout << "remoteAddr: " << remoteAddr.toIpPort() << std::endl;
     }
 }
 

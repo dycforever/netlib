@@ -7,7 +7,7 @@
         <nocleanup>0</nocleanup>
     </config>
     <!-- root category ========================================= -->
-    <category name="dyclog" priority="debug" appender="logfile"/>
+    <category name="dyclog" priority="info" appender="logfile"/>
 
     <!-- default appenders ===================================== -->
     <appender name="stdout" type="stream" layout="dated"/>
@@ -16,7 +16,7 @@
 
     <appender name="logfile" type="rollingfile" logdir="./log/" prefix="dyclog" layout="dated" rollingpolicy="myrollingpolicy"/>
     <!--sizewin表示达到最大值后新建日志文件, maxnum为最大文件数目-->
-    <rollingpolicy name="myrollingpolicy" type="sizewin" maxsize="102400" maxnum="10"/>
+    <rollingpolicy name="myrollingpolicy" type="sizewin" maxsize="1024000000" maxnum="10"/>
 
     <!-- default layouts ======================================= -->
     <layout name="basic" type="basic"/>

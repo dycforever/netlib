@@ -48,7 +48,7 @@ public:
     ~Socket();
 
     int bind(const InetAddress& localaddr);
-    int listen();
+    int listen(int backlog = -1);
     int accept(InetAddress& peeraddr);
     int connect(const InetAddress& localaddr);
 
@@ -65,8 +65,10 @@ public:
     void setLinger(bool on, int timeout);
 
     int send(const char* buf, size_t len);
+    int send(const std::string&);
     long recv(char* buf, size_t len, int*);
 
+    bool getLocalAddr(InetAddress& addr);
     bool getPeerAddr(InetAddress& addr);
     bool checkConnected();
 

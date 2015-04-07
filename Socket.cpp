@@ -100,9 +100,9 @@ int Socket::bind(const InetAddress& addr)
     return 0;
 }
 
-int Socket::listen()
+int Socket::listen(int backlog)
 {
-    int ret = ::listen(mSockfd, 100);
+    int ret = ::listen(mSockfd, backlog);
     if (ret < 0) {
         FATAL_LOG("listen  Die errno:%d with %s", errno, strerror(errno));
         return ret;
@@ -181,6 +181,17 @@ void Socket::setReuseAddr(bool on)
     }
 }
 
+bool Socket::getLocalAddr(InetAddress& addr) {
+    struct sockaddr_in localaddr;
+    bzero(&localaddr, sizeof localaddr);
+    socklen_t addrlen = static_cast<socklen_t>(sizeof localaddr);
+    if (::getsockname(mSockfd, sockaddr_cast(&localaddr), &addrlen) < 0) {
+        FATAL_LOG("sockets::getLocalAddr failed");
+        return false;
+    }
+    addr = InetAddress(localaddr);
+    return true;
+}
 
 bool Socket::getPeerAddr(InetAddress& addr)
 {
@@ -206,6 +217,10 @@ void Socket::setLinger(bool on, int timeout) {
     int optval = on ? 1 : 0;
     struct linger lingerVal = {optval, timeout};
     ::setsockopt(mSockfd, SOL_SOCKET, SO_LINGER, (char *) &lingerVal, sizeof(lingerVal));
+}
+
+int Socket::send(const std::string& mesg) {
+    return send(mesg.c_str(), mesg.size());
 }
 
 int Socket::send(const char* buf, size_t len) {
