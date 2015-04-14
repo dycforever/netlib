@@ -12,6 +12,51 @@ std::string ip = "42.120.169.24";
 std::string port = "80";
 std::string host = "m.sp.sm.cn";
 
+void setNonblocking(int fd) {
+    int opts = fcntl(fd, F_GETFL);
+    opts = opts | O_NONBLOCK;
+    fcntl(fd, F_SETFL, opts);
+}
+
+class TimeUtil
+{
+public:
+    static int64_t GetTimeInSec() {
+        struct timeval tval;
+        gettimeofday(&tval, NULL);
+        return tval.tv_sec;
+    }
+
+    static int64_t GetTimeInMs() {
+        struct timeval tval;
+        gettimeofday(&tval, NULL);
+        return (tval.tv_sec * 1000LL + tval.tv_usec / 1000);
+    }
+    
+    static int64_t GetTimeInUs() {
+        struct timeval tval;
+        gettimeofday(&tval, NULL);
+        return (tval.tv_sec * 1000000LL + tval.tv_usec);
+    }
+
+    static timespec GetTimeSpec(int64_t usecOffset) {
+        timespec tspec;
+        int64_t uTime = GetTimeInUs() + usecOffset;
+        tspec.tv_sec = uTime / 1000000;
+        tspec.tv_nsec = (uTime % 1000000) * 1000;
+        return tspec;
+    }
+
+    static std::string GetFormatTime(const std::string& format)
+    {
+        char outStr[256];
+        time_t t = time(NULL);
+        struct tm *tmp = localtime(&t);
+        strftime(outStr, sizeof(outStr), format.c_str(), tmp);
+        return std::string(outStr);
+    }
+};
+
 int main(int argc, char** argv) {
     InetAddress addr(ip, static_cast<uint16_t>(atoi(port.c_str())));    
     Socket socket(true);
