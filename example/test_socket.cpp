@@ -117,6 +117,16 @@ void test_shutdown()
     newso.close();
 }
 
+void test_buf()
+{
+    Socket socket(true);
+    socket.setSendBuf(100);
+    int bufsize = 0;
+    socklen_t retsize = 0;
+    socket.getSendBuf(&bufsize, &retsize);
+    std::cout << bufsize << " " << retsize << std::endl;
+}
+
 int main()
 {
     // if linger.timeout == 0, send rst in all situation
@@ -126,7 +136,8 @@ int main()
     // id countpart send RST, same with FIN(all cause read() return 0)
     // test_check();
 
-    test_shutdown();
+    // test_shutdown();
+    test_buf();
     while(1) {
         sleep(1);
     }

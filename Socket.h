@@ -62,7 +62,11 @@ public:
     /// Enable/disable SO_KEEPALIVE
     void setKeepAlive(bool on);
 
-    void setLinger(bool on, int timeout);
+    int setLinger(bool on, int timeout);
+    int setSendBuf(int val);
+    int getSendBuf(int* val, socklen_t* tmplen);
+    int setRcvBuf(int val);
+    int getRcvBuf(int* val, socklen_t* tmplen);
 
     int send(const char* buf, size_t len);
     int send(const std::string&);

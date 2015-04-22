@@ -213,10 +213,28 @@ void Socket::setKeepAlive(bool on) {
             &optval, static_cast<socklen_t>(sizeof optval));
 }
 
-void Socket::setLinger(bool on, int timeout) {
+int Socket::setLinger(bool on, int timeout) {
     int optval = on ? 1 : 0;
     struct linger lingerVal = {optval, timeout};
     ::setsockopt(mSockfd, SOL_SOCKET, SO_LINGER, (char *) &lingerVal, sizeof(lingerVal));
+}
+
+int Socket::setSendBuf(int val) {
+    return setsockopt(mSockfd, SOL_SOCKET, SO_SNDBUF, (char *)&val, sizeof(val));
+}
+
+int Socket::getSendBuf(int* val, socklen_t* tmplen) {
+	int ret = getsockopt(mSockfd, SOL_SOCKET, SO_SNDBUF, (char *)&val, tmplen);
+    return ret;
+}
+
+int Socket::setRcvBuf(int val) {
+    return setsockopt(mSockfd, SOL_SOCKET, SO_RCVBUF, (char *)&val, sizeof(val));
+}
+
+int Socket::getRcvBuf(int* val, socklen_t* tmplen) {
+	int ret = getsockopt(mSockfd, SOL_SOCKET, SO_RCVBUF, (char *)&val, tmplen);
+    return ret;
 }
 
 int Socket::send(const std::string& mesg) {
