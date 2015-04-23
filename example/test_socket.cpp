@@ -120,11 +120,14 @@ void test_shutdown()
 void test_buf()
 {
     Socket socket(true);
-    socket.setSendBuf(100);
-    int bufsize = 0;
-    socklen_t retsize = 0;
-    socket.getSendBuf(&bufsize, &retsize);
-    std::cout << bufsize << " " << retsize << std::endl;
+    std::cout << socket.getSendBuf() << std::endl;
+    for (int i = 1; i <= 100; i += 10) {
+        socket.setSendBuf(i * 1000);
+        std::cout << socket.getSendBuf() << std::endl;
+    }
+
+    socket.setSendBuf(10000 * 1000);
+    std::cout << socket.getSendBuf() << std::endl;
 }
 
 int main()
@@ -138,7 +141,7 @@ int main()
 
     // test_shutdown();
     test_buf();
-    while(1) {
-        sleep(1);
-    }
+//    while(1) {
+//        sleep(1);
+//    }
 }

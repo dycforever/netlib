@@ -223,18 +223,34 @@ int Socket::setSendBuf(int val) {
     return setsockopt(mSockfd, SOL_SOCKET, SO_SNDBUF, (char *)&val, sizeof(val));
 }
 
-int Socket::getSendBuf(int* val, socklen_t* tmplen) {
-	int ret = getsockopt(mSockfd, SOL_SOCKET, SO_SNDBUF, (char *)&val, tmplen);
-    return ret;
+int Socket::getSendBuf() {
+    int val = 0; 
+    socklen_t tmplen = sizeof(int);
+	int ret = getsockopt(mSockfd, SOL_SOCKET, SO_SNDBUF, (char *)&val, &tmplen);
+    if (ret != 0 || tmplen != sizeof(int)) {
+        FATAL_LOG("getsockopt failed");
+        return -1;
+    }
+    return val;
 }
 
 int Socket::setRcvBuf(int val) {
-    return setsockopt(mSockfd, SOL_SOCKET, SO_RCVBUF, (char *)&val, sizeof(val));
+    int ret = setsockopt(mSockfd, SOL_SOCKET, SO_RCVBUF, (char *)&val, sizeof(val));
+    if (ret != 0) {
+        FATAL_LOG("setsockopt failed");
+    }
+    return ret;
 }
 
-int Socket::getRcvBuf(int* val, socklen_t* tmplen) {
-	int ret = getsockopt(mSockfd, SOL_SOCKET, SO_RCVBUF, (char *)&val, tmplen);
-    return ret;
+int Socket::getRcvBuf() {
+    int val = 0; 
+    socklen_t tmplen = sizeof(int);
+	int ret = getsockopt(mSockfd, SOL_SOCKET, SO_RCVBUF, (char *)&val, &tmplen);
+    if (ret != 0 || tmplen != sizeof(int)) {
+        FATAL_LOG("getsockopt failed");
+        return -1;
+    }
+    return val;
 }
 
 int Socket::send(const std::string& mesg) {

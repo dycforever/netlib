@@ -64,9 +64,9 @@ public:
 
     int setLinger(bool on, int timeout);
     int setSendBuf(int val);
-    int getSendBuf(int* val, socklen_t* tmplen);
+    int getSendBuf();
     int setRcvBuf(int val);
-    int getRcvBuf(int* val, socklen_t* tmplen);
+    int getRcvBuf();
 
     int send(const char* buf, size_t len);
     int send(const std::string&);
