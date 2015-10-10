@@ -10,8 +10,10 @@
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
 
-#define PORT 8800
 #define RTT 3000
+
+const char* gIp = "10.99.20.67";
+int gPort = 8800;
 
 class PcapParser
 {
@@ -67,16 +69,15 @@ void RTTcounter::statistic(struct pcap_pkthdr* packet, const u_char* data)
     }
     const u_char* httpPtr = data + ethLength + ipHeaderLength + tcpHeaderLength;
 
-    char* ip = "10.99.20.67";
     struct sockaddr_in targetAddr;
-    inet_aton(ip, &targetAddr.sin_addr);
+    inet_aton(gIp, &targetAddr.sin_addr);
     if(ipPtr->saddr != targetAddr.sin_addr.s_addr) {
         // not tcp packet
         mSkipCount++;
         return;
     }
 
-    if (ntohs(tcpPtr->source) != PORT || tcpPtr->syn || tcpPtr->fin) {
+    if (ntohs(tcpPtr->source) != gPort || tcpPtr->syn || tcpPtr->fin) {
         mSkipCount++;
         return;
     }
@@ -108,10 +109,13 @@ bool PcapParser::Parse(const std::string& dataFile)
 
 int main(int argc, char* argv[])
 {
-    if (argc != 2) {
-        printf("usage: %s file_name\n", argv[0]);
+    if (argc != 4) {
+        printf("usage: %s file_name ip(10.99.20.67) port(8800)\n", argv[0]);
         return 0;
     }
+
+    gIp = argv[2];
+    gPort = atoi(argv[3]);
 
     const char* pcapFile = argv[1];
     RTTcounter counter;
